@@ -16,13 +16,6 @@ $(document).ready(function () {
     $("#group-image-preview").css("background-position", "center center");
   }
   $("#timezone").val(window.groupData.timezone).trigger("change");
-
-  const recurrenceTz = $("#recurrenceTimezone");
-  if (recurrenceTz.length) {
-    const savedTz = window.groupData.recurrence?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    recurrenceTz.select2();
-    recurrenceTz.val(savedTz).trigger("change");
-  }
 });
 
 $("#editModal").on("shown.bs.modal", function (e) {
@@ -31,6 +24,13 @@ $("#editModal").on("shown.bs.modal", function (e) {
   autosize(ta);
   ta.style.display = "";
   autosize.update(ta);
+
+  const recurrenceTz = $("#recurrenceTimezone");
+  if (recurrenceTz.length && !recurrenceTz.hasClass("select2-hidden-accessible")) {
+    recurrenceTz.select2({ dropdownParent: $("#editModal") });
+  }
+  const savedTz = window.groupData.recurrence?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  recurrenceTz.val(savedTz).trigger("change");
 });
 
 function editEventGroupForm() {
@@ -39,7 +39,7 @@ function editEventGroupForm() {
     data: {
       eventGroupName: window.groupData.name,
       eventGroupDescription: window.groupData.description,
-      eventGroupURL: window.groupData.url,
+      eventGroupURL: window.groupData.url || "",
       hostName: window.groupData.hostName,
       creatorEmail: window.groupData.creatorEmail,
       publicCheckbox: window.groupData.showOnPublicList,
