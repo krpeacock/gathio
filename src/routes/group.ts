@@ -69,6 +69,21 @@ router.post(
         }
       }
 
+      const recurrence =
+        groupData.recurrenceEnabled
+          ? {
+              enabled: true,
+              frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
+              dayOfWeek: groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined,
+              monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
+              dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
+              nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
+              time: groupData.recurrenceTime!,
+              timezone: groupData.recurrenceTimezone!,
+              durationMinutes: Number(groupData.recurrenceDurationMinutes),
+            }
+          : undefined;
+
       const eventGroup = new EventGroup({
         id: groupID,
         name: groupData.eventGroupName,
@@ -80,6 +95,7 @@ router.post(
         editToken: editToken,
         firstLoad: true,
         showOnPublicList: groupData.publicBoolean,
+        recurrence,
       });
 
       await eventGroup.save();
@@ -196,6 +212,21 @@ router.put(
         eventGroupImageFilename = eventGroupID + ".jpg";
       }
 
+      const updatedRecurrence =
+        groupData.recurrenceEnabled
+          ? {
+              enabled: true,
+              frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
+              dayOfWeek: groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined,
+              monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
+              dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
+              nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
+              time: groupData.recurrenceTime!,
+              timezone: groupData.recurrenceTimezone!,
+              durationMinutes: Number(groupData.recurrenceDurationMinutes),
+            }
+          : undefined;
+
       const updatedEventGroup = {
         name: req.body.eventGroupName,
         description: req.body.eventGroupDescription,
@@ -203,6 +234,7 @@ router.put(
         hostName: req.body.hostName,
         image: eventGroupImageFilename,
         showOnPublicList: groupData.publicBoolean,
+        recurrence: updatedRecurrence,
       };
 
       await EventGroup.findOneAndUpdate(

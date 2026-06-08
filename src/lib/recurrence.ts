@@ -7,6 +7,32 @@ import type { IRecurrenceRule } from "../models/EventGroup.js";
 const LOOKAHEAD_DAYS = 90;
 
 /**
+ * Returns the moment for the nth occurrence of a weekday in a given month.
+ * nth = 1–4 for first–fourth; nth = -1 for last.
+ */
+function nthWeekdayOfMonth(
+  year: number,
+  month: number, // 0-based
+  dayOfWeek: number, // 0=Sun
+  nth: number,
+): moment.Moment | null {
+  if (nth === -1) {
+    // Last occurrence: start from end of month and walk back
+    const last = moment.tz({ year, month }, "UTC").endOf("month").startOf("day");
+    while (last.day() !== dayOfWeek) last.subtract(1, "day");
+    return last;
+  }
+  // Find the first occurrence then advance by (nth-1) weeks
+  const first = moment.tz({ year, month, date: 1 }, "UTC");
+  const diff = (dayOfWeek - first.day() + 7) % 7;
+  first.add(diff, "days");
+  first.add((nth - 1) * 7, "days");
+  // Verify it's still in the same month
+  if (first.month() !== month) return null;
+  return first;
+}
+
+/**
  * Computes all occurrence start times within [from, until) for a given rule.
  * Returns moment objects in the rule's timezone.
  */
@@ -29,10 +55,20 @@ export function computeOccurrences(
         candidate = cursor.clone().hour(hours).minute(minutes).second(0).millisecond(0);
       }
     } else if (rule.frequency === "monthly") {
-      const lastDayOfMonth = cursor.clone().endOf("month").date();
-      const targetDay = Math.min(rule.dayOfMonth ?? 1, lastDayOfMonth);
-      if (cursor.date() === targetDay) {
-        candidate = cursor.clone().hour(hours).minute(minutes).second(0).millisecond(0);
+      if (!rule.monthlyType || rule.monthlyType === "day-of-month") {
+        const lastDayOfMonth = cursor.clone().endOf("month").date();
+        const targetDay = Math.min(rule.dayOfMonth ?? 1, lastDayOfMonth);
+        if (cursor.date() === targetDay) {
+          candidate = cursor.clone().hour(hours).minute(minutes).second(0).millisecond(0);
+        }
+      } else {
+        // nth-weekday: only evaluate on the first day of each month
+        if (cursor.date() === 1) {
+          const resolved = nthWeekdayOfMonth(cursor.year(), cursor.month(), rule.dayOfWeek ?? 0, rule.nth ?? 1);
+          if (resolved) {
+            candidate = resolved.clone().hour(hours).minute(minutes).second(0).millisecond(0);
+          }
+        }
       }
     }
 
@@ -41,7 +77,10 @@ export function computeOccurrences(
     }
 
     // Advance cursor
-    if (rule.frequency === "biweekly" && cursor.day() === rule.dayOfWeek) {
+    if (rule.frequency === "monthly" && rule.monthlyType === "nth-weekday" && cursor.date() === 1) {
+      // Jump to first of next month
+      cursor.add(1, "month");
+    } else if (rule.frequency === "biweekly" && cursor.day() === rule.dayOfWeek) {
       cursor.add(2, "weeks");
     } else {
       cursor.add(1, "day");

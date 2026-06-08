@@ -6,11 +6,18 @@ export interface ISubscriber {
 
 export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly";
 
+export type MonthlyType = "day-of-month" | "nth-weekday";
+
 export interface IRecurrenceRule {
   enabled: boolean;
   frequency: RecurrenceFrequency;
-  dayOfWeek?: number; // 0–6, used for weekly/biweekly
-  dayOfMonth?: number; // 1–31, used for monthly
+  // weekly / biweekly
+  dayOfWeek?: number; // 0–6
+  // monthly: fixed day (e.g. the 15th)
+  monthlyType?: MonthlyType;
+  dayOfMonth?: number; // 1–31, used when monthlyType === 'day-of-month'
+  // monthly: nth weekday (e.g. "first Tuesday", "last Friday")
+  nth?: number; // 1–4 or -1 for last
   time: string; // 'HH:MM' in the group's timezone
   timezone: string; // IANA tz string e.g. 'America/Los_Angeles'
   durationMinutes: number;
@@ -98,7 +105,9 @@ const EventGroupSchema = new mongoose.Schema({
           required: true,
         },
         dayOfWeek: { type: Number, min: 0, max: 6 },
+        monthlyType: { type: String, enum: ["day-of-month", "nth-weekday"] },
         dayOfMonth: { type: Number, min: 1, max: 31 },
+        nth: { type: Number },
         time: { type: String, required: true },
         timezone: { type: String, required: true },
         durationMinutes: { type: Number, required: true },

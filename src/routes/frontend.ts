@@ -9,7 +9,7 @@ import {
 } from "../lib/config.js";
 import { addToLog, exportIcal, type ICalEvent } from "../helpers.js";
 import Event, { getApprovedAttendeeCount } from "../models/Event.js";
-import EventGroup, { type IEventGroup } from "../models/EventGroup.js";
+import EventGroup, { type IEventGroup, type IRecurrenceRule } from "../models/EventGroup.js";
 import type mongoose from "mongoose";
 import {
   acceptsActivityPub,
@@ -20,6 +20,29 @@ import { getConfigMiddleware } from "../lib/middleware.js";
 import { getMessage } from "../util/messages.js";
 import { type EventListEvent, bucketEventsByMonth } from "../lib/event.js";
 import i18next from "i18next";
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const NTH_LABELS: Record<number, string> = { 1: "first", 2: "second", 3: "third", 4: "fourth", [-1]: "last" };
+
+function buildRecurrenceSummary(rule?: IRecurrenceRule): string | null {
+  if (!rule?.enabled) return null;
+  const time = rule.time;
+  const tz = rule.timezone;
+  if (rule.frequency === "weekly") {
+    return `Every ${DAYS[rule.dayOfWeek ?? 0]} at ${time} ${tz}`;
+  }
+  if (rule.frequency === "biweekly") {
+    return `Every other ${DAYS[rule.dayOfWeek ?? 0]} at ${time} ${tz}`;
+  }
+  if (rule.frequency === "monthly") {
+    if (!rule.monthlyType || rule.monthlyType === "day-of-month") {
+      return `Monthly on the ${rule.dayOfMonth} at ${time} ${tz}`;
+    }
+    const nthLabel = NTH_LABELS[rule.nth ?? 1] ?? `${rule.nth}th`;
+    return `Monthly on the ${nthLabel} ${DAYS[rule.dayOfWeek ?? 0]} at ${time} ${tz}`;
+  }
+  return null;
+}
 
 const router = Router();
 
@@ -715,7 +738,9 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
         image: eventGroup.image,
         editToken: editingEnabled ? eventGroupEditToken : null,
         showOnPublicList: eventGroup.showOnPublicList,
+        recurrence: eventGroup.recurrence,
       },
+      recurrenceSummary: buildRecurrenceSummary(eventGroup.recurrence),
     });
   } catch (err) {
     addToLog(

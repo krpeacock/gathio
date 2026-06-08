@@ -40,6 +40,14 @@
             <span class="text-muted">{{{t "views.eventgroup.hostedby" }}}
           </li>
         {{/if}}
+        {{#if recurrenceSummary}}
+          <li id="recurrenceSummary">
+            <span class="fa-li">
+              <i class="fas fa-redo"></i>
+            </span>
+            {{recurrenceSummary}}
+          </li>
+        {{/if}}
         {{#if eventGroupData.url}}
           <li id="eventGroupURL">
             <span class="fa-li">
@@ -133,6 +141,7 @@
 </div>
 
 {{#if editingEnabled}}
+<script src="/js/generate-timezones.js"></script>
 {{> editeventgroupmodal }}
 
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">

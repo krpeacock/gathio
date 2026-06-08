@@ -16,6 +16,15 @@ $(document).ready(function () {
     $("#group-image-preview").css("background-position", "center center");
   }
   $("#timezone").val(window.groupData.timezone).trigger("change");
+
+  if (typeof generateTimezoneOptions === "function") {
+    const tzOptions = generateTimezoneOptions();
+    const recurrenceTz = $("#recurrenceTimezone");
+    recurrenceTz.append(tzOptions);
+    const savedTz = window.groupData.recurrence?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    recurrenceTz.val(savedTz).trigger("change");
+    recurrenceTz.select2();
+  }
 });
 
 $("#editModal").on("shown.bs.modal", function (e) {
@@ -27,6 +36,7 @@ $("#editModal").on("shown.bs.modal", function (e) {
 });
 
 function editEventGroupForm() {
+  const rec = window.groupData.recurrence || {};
   return {
     data: {
       eventGroupName: window.groupData.name,
@@ -35,9 +45,18 @@ function editEventGroupForm() {
       hostName: window.groupData.hostName,
       creatorEmail: window.groupData.creatorEmail,
       publicCheckbox: window.groupData.showOnPublicList,
+      recurrenceEnabled: !!rec.enabled,
+      recurrenceFrequency: rec.frequency || "weekly",
+      recurrenceDayOfWeek: rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
+      recurrenceMonthlyType: rec.monthlyType || "day-of-month",
+      recurrenceDayOfMonth: rec.dayOfMonth !== undefined ? String(rec.dayOfMonth) : "1",
+      recurrenceNth: rec.nth !== undefined ? String(rec.nth) : "1",
+      recurrenceNthDayOfWeek: rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
+      recurrenceTime: rec.time || "18:00",
+      recurrenceTimezone: rec.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      recurrenceDurationMinutes: rec.durationMinutes !== undefined ? String(rec.durationMinutes) : "60",
     },
     init() {
-      // Set checkboxes
       this.data.publicCheckbox = window.groupData.showOnPublicList;
     },
     errors: [],
@@ -49,6 +68,9 @@ function editEventGroupForm() {
       for (const [key, value] of Object.entries(this.data)) {
         formData.append(key, value);
       }
+      // Sync timezone from select2 widget
+      const recTz = document.getElementById("recurrenceTimezone");
+      if (recTz) formData.set("recurrenceTimezone", recTz.value);
       formData.append("imageUpload", this.$refs.eventGroupImageUpload.files[0]);
       formData.append("editToken", window.groupData.editToken);
       try {
