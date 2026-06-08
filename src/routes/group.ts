@@ -69,12 +69,15 @@ router.post(
         }
       }
 
+      const isNthWeekday = groupData.recurrenceMonthlyType === "nth-weekday";
       const recurrence =
         groupData.recurrenceEnabled
           ? {
               enabled: true,
               frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
-              dayOfWeek: groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined,
+              dayOfWeek: isNthWeekday
+                ? (groupData.recurrenceNthDayOfWeek !== undefined ? Number(groupData.recurrenceNthDayOfWeek) : undefined)
+                : (groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined),
               monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
               dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
               nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
@@ -212,12 +215,15 @@ router.put(
         eventGroupImageFilename = eventGroupID + ".jpg";
       }
 
+      const isNthWeekdayUpdate = groupData.recurrenceMonthlyType === "nth-weekday";
       const updatedRecurrence =
         groupData.recurrenceEnabled
           ? {
               enabled: true,
               frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
-              dayOfWeek: groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined,
+              dayOfWeek: isNthWeekdayUpdate
+                ? (groupData.recurrenceNthDayOfWeek !== undefined ? Number(groupData.recurrenceNthDayOfWeek) : undefined)
+                : (groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined),
               monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
               dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
               nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
