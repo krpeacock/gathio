@@ -4,6 +4,18 @@ export interface ISubscriber {
   email?: string;
 }
 
+export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly";
+
+export interface IRecurrenceRule {
+  enabled: boolean;
+  frequency: RecurrenceFrequency;
+  dayOfWeek?: number; // 0–6, used for weekly/biweekly
+  dayOfMonth?: number; // 1–31, used for monthly
+  time: string; // 'HH:MM' in the group's timezone
+  timezone: string; // IANA tz string e.g. 'America/Los_Angeles'
+  durationMinutes: number;
+}
+
 export interface IEventGroup extends mongoose.Document {
   id: string;
   name: string;
@@ -17,6 +29,7 @@ export interface IEventGroup extends mongoose.Document {
   events?: mongoose.Types.ObjectId[];
   subscribers?: ISubscriber[];
   showOnPublicList?: boolean;
+  recurrence?: IRecurrenceRule;
 }
 
 const Subscriber = new mongoose.Schema({
@@ -74,6 +87,25 @@ const EventGroupSchema = new mongoose.Schema({
   showOnPublicList: {
     type: Boolean,
     default: false,
+  },
+  recurrence: {
+    type: new mongoose.Schema(
+      {
+        enabled: { type: Boolean, required: true, default: false },
+        frequency: {
+          type: String,
+          enum: ["weekly", "biweekly", "monthly"],
+          required: true,
+        },
+        dayOfWeek: { type: Number, min: 0, max: 6 },
+        dayOfMonth: { type: Number, min: 1, max: 31 },
+        time: { type: String, required: true },
+        timezone: { type: String, required: true },
+        durationMinutes: { type: Number, required: true },
+      },
+      { _id: false },
+    ),
+    required: false,
   },
 });
 
