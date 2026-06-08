@@ -19,6 +19,7 @@ import event from "./routes/event.js";
 import group from "./routes/group.js";
 import staticPages from "./routes/static.js";
 import magicLink from "./routes/magicLink.js";
+import api from "./routes/api.js";
 import { getI18nHelpers } from "./helpers.js";
 import moment from "moment";
 import { EmailService } from "./lib/email.js";
@@ -183,6 +184,7 @@ async function initializeApp() {
   app.use(express.urlencoded({ extended: true }));
 
   // Router //
+  app.use("/", api);
   app.use("/", staticPages);
   app.use("/", frontend);
   app.use("/", activitypub);
