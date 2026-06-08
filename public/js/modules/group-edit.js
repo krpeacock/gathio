@@ -17,13 +17,11 @@ $(document).ready(function () {
   }
   $("#timezone").val(window.groupData.timezone).trigger("change");
 
-  if (typeof generateTimezoneOptions === "function") {
-    const tzOptions = generateTimezoneOptions();
-    const recurrenceTz = $("#recurrenceTimezone");
-    recurrenceTz.append(tzOptions);
+  const recurrenceTz = $("#recurrenceTimezone");
+  if (recurrenceTz.length) {
     const savedTz = window.groupData.recurrence?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    recurrenceTz.val(savedTz).trigger("change");
     recurrenceTz.select2();
+    recurrenceTz.val(savedTz).trigger("change");
   }
 });
 

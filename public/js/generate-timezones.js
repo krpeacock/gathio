@@ -370,7 +370,14 @@ const timezones = [
       return memo.concat(`<option value="${tz.name}">(GMT${timezone}) ${tz.name.replace(/_/g," ")}</option>`);
     }, "");
   
-  document.querySelector("#timezone").innerHTML = selectorOptions;
-  
-  document.querySelector("#timezone").value = moment.tz.guess();
+  const tzEl = document.querySelector("#timezone");
+  if (tzEl) {
+    tzEl.innerHTML = selectorOptions;
+    tzEl.value = moment.tz.guess();
+  }
+
+  const recTzEl = document.querySelector("#recurrenceTimezone");
+  if (recTzEl) {
+    recTzEl.innerHTML = selectorOptions;
+  }
   
