@@ -1,4 +1,4 @@
-FROM node:22-alpine AS BUILD_IMAGE
+FROM node:22-alpine AS build_image
 WORKDIR /app
 RUN apk add --no-cache python3 build-base
 ADD package.json pnpm-lock.yaml /app/
@@ -12,5 +12,5 @@ RUN pnpm prune --prod
 FROM node:22-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=BUILD_IMAGE /app ./
+COPY --from=build_image /app ./
 CMD ["npm", "run", "start"]

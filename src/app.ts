@@ -129,6 +129,9 @@ async function initializeApp() {
         // Get the first letter of a name for avatar display
         return name ? name.charAt(0).toUpperCase() : "?";
       },
+      eq: function (a: unknown, b: unknown) {
+        return a === b;
+      },
     },
   });
 

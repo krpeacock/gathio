@@ -25,12 +25,6 @@ $("#editModal").on("shown.bs.modal", function (e) {
   ta.style.display = "";
   autosize.update(ta);
 
-  const recurrenceTz = $("#recurrenceTimezone");
-  if (recurrenceTz.length && !recurrenceTz.hasClass("select2-hidden-accessible")) {
-    recurrenceTz.select2({ dropdownParent: $("#editModal") });
-  }
-  const savedTz = window.groupData.recurrence?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  recurrenceTz.val(savedTz).trigger("change");
 });
 
 function editEventGroupForm() {

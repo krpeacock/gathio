@@ -269,7 +269,7 @@ export const validateGroupData = (
       });
     }
   }
-  if (groupData.eventGroupURL) {
+  if (groupData.eventGroupURL && groupData.eventGroupURL !== "undefined") {
     if (!validateUrl(groupData.eventGroupURL)) {
       errors.push({
         message: i18next.t("util.validation.groupdata.eventgroupurl"),

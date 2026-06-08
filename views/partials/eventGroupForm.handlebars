@@ -109,7 +109,11 @@
       </div>
       <div class="form-group col-md-4">
         <label for="recurrenceTimezone">Timezone</label>
-        <select class="select2 form-control" id="recurrenceTimezone" name="recurrenceTimezone" x-ref="recurrenceTimezone"></select>
+        <select class="form-control" id="recurrenceTimezone" name="recurrenceTimezone">
+          {{#each timezones}}
+            <option value="{{this}}"{{#if (eq this ../defaultTimezone)}} selected{{/if}}>{{this}}</option>
+          {{/each}}
+        </select>
       </div>
     </div>
   </div>
