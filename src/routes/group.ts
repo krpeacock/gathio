@@ -7,7 +7,7 @@ import { addToLog } from "../helpers.js";
 import EventGroup from "../models/EventGroup.js";
 import { marked } from "marked";
 import { renderPlain } from "../util/markdown.js";
-import { checkMagicLink, getConfigMiddleware } from "../lib/middleware.js";
+import { checkAuth, getConfigMiddleware } from "../lib/middleware.js";
 
 const storage = multer.memoryStorage();
 // Accept only JPEG, GIF or PNG images, up to 10MB
@@ -31,7 +31,7 @@ router.use(getConfigMiddleware);
 router.post(
   "/group",
   upload.single("imageUpload"),
-  checkMagicLink,
+  checkAuth,
   async (req: Request, res: Response) => {
     const { data: groupData, errors } = validateGroupData(req.body);
     if (errors && errors.length > 0) {

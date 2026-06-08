@@ -35,6 +35,15 @@ mail_service = "none"
 # creator_email_addresses = ["test@test.com", "admin@test.com"]
 creator_email_addresses = []
 
+# API keys allow programmatic event and group creation without a magic link.
+# Generate a key with: npx tsx scripts/generate-api-key.ts <label>
+# Then use it as: Authorization: Bearer <key>
+# Keys are stored as SHA-256 hashes — never store the raw key here.
+#
+# [[api_keys]]
+# label = "my-bot"
+# hashed_key = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
 [database]
 # Set up for a locally running MongoDB connection. Change this to
 # 'mongodb://mongo:27017/gathio' for a Dockerised connection.

@@ -25,7 +25,7 @@ import {
 import crypto from "node:crypto";
 import ical from "ical";
 import { markdownToSanitizedHTML } from "../util/markdown.js";
-import { checkMagicLink, getConfigMiddleware } from "../lib/middleware.js";
+import { checkAuth, getConfigMiddleware } from "../lib/middleware.js";
 import { getConfig } from "../lib/config.js";
 import i18next from "i18next";
 moment.locale(i18next.language);
@@ -64,7 +64,7 @@ router.use(getConfigMiddleware);
 router.post(
   "/event",
   upload.single("imageUpload"),
-  checkMagicLink,
+  checkAuth,
   async (req: Request, res: Response) => {
     const { data: eventData, errors } = validateEventData(req.body);
     if (errors && errors.length > 0) {
@@ -584,7 +584,7 @@ router.put(
 router.post(
   "/import/event",
   icsUpload.single("icsImportControl"),
-  checkMagicLink,
+  checkAuth,
   async (req: Request, res: Response) => {
     if (!req.file) {
       return res.status(400).json({

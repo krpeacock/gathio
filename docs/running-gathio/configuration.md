@@ -18,6 +18,16 @@ Gathio is configured through a config file located at `config/config.toml`. The 
 | `mail_service`            | "nodemailer"          | Which mail service to use to send emails to hosts and attendees. Options are 'nodemailer' or 'sendgrid'.                                                                                                                                              |
 | `creator_email_addresses` | []                    | An array of email addresses which are permitted to create events. If this is empty, anyone can create events. For example: ["test@test.com", "admin@test.com"]                                                                                        |
 
+## `[[api_keys]]` sections
+
+Each `[[api_keys]]` block defines one API key that can be used to create events
+and groups programmatically. See [API Keys](api-keys.md) for the full setup guide.
+
+| Option       | Description                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| `label`      | A human-readable name for this key (e.g. `"scheduling-bot"`). Used for identification only.     |
+| `hashed_key` | SHA-256 hash of the raw key. Generate with `npx tsx scripts/generate-api-key.ts <label>`.       |
+
 ## `[database]` section
 
 | Option        | Default Value                      | Description                                                                                                                 |

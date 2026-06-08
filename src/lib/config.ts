@@ -11,6 +11,11 @@ interface StaticPage {
   filename: string;
 }
 
+export interface ApiKeyEntry {
+  label: string;
+  hashed_key: string;
+}
+
 export interface GathioConfig {
   general: {
     domain: string;
@@ -26,6 +31,7 @@ export interface GathioConfig {
     mail_service: "nodemailer" | "sendgrid" | "mailgun" | "none";
     creator_email_addresses: string[];
   };
+  api_keys?: ApiKeyEntry[];
   database: {
     mongodb_url: string;
   };
