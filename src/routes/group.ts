@@ -71,22 +71,36 @@ router.post(
       }
 
       const isNthWeekday = groupData.recurrenceMonthlyType === "nth-weekday";
-      const recurrence =
-        groupData.recurrenceEnabled
-          ? {
-              enabled: true,
-              frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
-              dayOfWeek: isNthWeekday
-                ? (groupData.recurrenceNthDayOfWeek !== undefined ? Number(groupData.recurrenceNthDayOfWeek) : undefined)
-                : (groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined),
-              monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
-              dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
-              nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
-              time: groupData.recurrenceTime!,
-              timezone: groupData.recurrenceTimezone!,
-              durationMinutes: Number(groupData.recurrenceDurationMinutes),
-            }
-          : undefined;
+      const recurrence = groupData.recurrenceEnabled
+        ? {
+            enabled: true,
+            frequency: groupData.recurrenceFrequency as
+              | "weekly"
+              | "biweekly"
+              | "monthly",
+            dayOfWeek: isNthWeekday
+              ? groupData.recurrenceNthDayOfWeek !== undefined
+                ? Number(groupData.recurrenceNthDayOfWeek)
+                : undefined
+              : groupData.recurrenceDayOfWeek !== undefined
+                ? Number(groupData.recurrenceDayOfWeek)
+                : undefined,
+            monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as
+              | "day-of-month"
+              | "nth-weekday",
+            dayOfMonth:
+              groupData.recurrenceDayOfMonth !== undefined
+                ? Number(groupData.recurrenceDayOfMonth)
+                : undefined,
+            nth:
+              groupData.recurrenceNth !== undefined
+                ? Number(groupData.recurrenceNth)
+                : undefined,
+            time: groupData.recurrenceTime!,
+            timezone: groupData.recurrenceTimezone!,
+            durationMinutes: Number(groupData.recurrenceDurationMinutes),
+          }
+        : undefined;
 
       const eventGroup = new EventGroup({
         id: groupID,
@@ -106,7 +120,10 @@ router.post(
 
       if (recurrence?.enabled) {
         generateRecurringEvents().catch((err) =>
-          console.error("Recurrence generation failed after group create:", err),
+          console.error(
+            "Recurrence generation failed after group create:",
+            err,
+          ),
         );
       }
 
@@ -222,23 +239,38 @@ router.put(
         eventGroupImageFilename = eventGroupID + ".jpg";
       }
 
-      const isNthWeekdayUpdate = groupData.recurrenceMonthlyType === "nth-weekday";
-      const updatedRecurrence =
-        groupData.recurrenceEnabled
-          ? {
-              enabled: true,
-              frequency: groupData.recurrenceFrequency as "weekly" | "biweekly" | "monthly",
-              dayOfWeek: isNthWeekdayUpdate
-                ? (groupData.recurrenceNthDayOfWeek !== undefined ? Number(groupData.recurrenceNthDayOfWeek) : undefined)
-                : (groupData.recurrenceDayOfWeek !== undefined ? Number(groupData.recurrenceDayOfWeek) : undefined),
-              monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as "day-of-month" | "nth-weekday",
-              dayOfMonth: groupData.recurrenceDayOfMonth !== undefined ? Number(groupData.recurrenceDayOfMonth) : undefined,
-              nth: groupData.recurrenceNth !== undefined ? Number(groupData.recurrenceNth) : undefined,
-              time: groupData.recurrenceTime!,
-              timezone: groupData.recurrenceTimezone!,
-              durationMinutes: Number(groupData.recurrenceDurationMinutes),
-            }
-          : undefined;
+      const isNthWeekdayUpdate =
+        groupData.recurrenceMonthlyType === "nth-weekday";
+      const updatedRecurrence = groupData.recurrenceEnabled
+        ? {
+            enabled: true,
+            frequency: groupData.recurrenceFrequency as
+              | "weekly"
+              | "biweekly"
+              | "monthly",
+            dayOfWeek: isNthWeekdayUpdate
+              ? groupData.recurrenceNthDayOfWeek !== undefined
+                ? Number(groupData.recurrenceNthDayOfWeek)
+                : undefined
+              : groupData.recurrenceDayOfWeek !== undefined
+                ? Number(groupData.recurrenceDayOfWeek)
+                : undefined,
+            monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as
+              | "day-of-month"
+              | "nth-weekday",
+            dayOfMonth:
+              groupData.recurrenceDayOfMonth !== undefined
+                ? Number(groupData.recurrenceDayOfMonth)
+                : undefined,
+            nth:
+              groupData.recurrenceNth !== undefined
+                ? Number(groupData.recurrenceNth)
+                : undefined,
+            time: groupData.recurrenceTime!,
+            timezone: groupData.recurrenceTimezone!,
+            durationMinutes: Number(groupData.recurrenceDurationMinutes),
+          }
+        : undefined;
 
       const updatedEventGroup = {
         name: req.body.eventGroupName,
@@ -257,7 +289,10 @@ router.put(
 
       if (updatedRecurrence?.enabled) {
         generateRecurringEvents().catch((err) =>
-          console.error("Recurrence generation failed after group update:", err),
+          console.error(
+            "Recurrence generation failed after group update:",
+            err,
+          ),
         );
       }
 

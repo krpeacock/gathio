@@ -81,7 +81,11 @@ function errorText(data: unknown): string {
     if (typeof d.error === "string") return d.error;
     if (Array.isArray(d.errors)) {
       return d.errors
-        .map((e: unknown) => (typeof e === "object" && e !== null ? (e as Record<string, unknown>).message : String(e)))
+        .map((e: unknown) =>
+          typeof e === "object" && e !== null
+            ? (e as Record<string, unknown>).message
+            : String(e),
+        )
         .join("; ");
     }
   }
@@ -102,17 +106,44 @@ server.tool(
   "Create a one-off event on the configured gathio instance. Returns the event ID, edit token, and URL.",
   {
     eventName: z.string().describe("Event title"),
-    eventLocation: z.string().optional().describe("Physical or virtual location"),
-    eventStart: z.string().describe("Start date/time in ISO 8601 or 'YYYY-MM-DDTHH:mm' format"),
-    eventEnd: z.string().describe("End date/time in ISO 8601 or 'YYYY-MM-DDTHH:mm' format"),
+    eventLocation: z
+      .string()
+      .optional()
+      .describe("Physical or virtual location"),
+    eventStart: z
+      .string()
+      .describe("Start date/time in ISO 8601 or 'YYYY-MM-DDTHH:mm' format"),
+    eventEnd: z
+      .string()
+      .describe("End date/time in ISO 8601 or 'YYYY-MM-DDTHH:mm' format"),
     timezone: z.string().describe("IANA timezone, e.g. 'America/Los_Angeles'"),
-    eventDescription: z.string().optional().describe("Event description (Markdown supported)"),
-    creatorEmail: z.string().optional().describe("Organiser email address for magic-link editing"),
+    eventDescription: z
+      .string()
+      .optional()
+      .describe("Event description (Markdown supported)"),
+    creatorEmail: z
+      .string()
+      .optional()
+      .describe("Organiser email address for magic-link editing"),
     hostName: z.string().optional().describe("Display name of the event host"),
-    maxAttendees: z.number().int().positive().optional().describe("Capacity limit (omit for unlimited)"),
-    showOnPublicList: z.boolean().optional().describe("List on the public events page"),
-    groupID: z.string().optional().describe("Attach to an existing group by ID"),
-    groupEditToken: z.string().optional().describe("Edit token of the group (required when groupID is given)"),
+    maxAttendees: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Capacity limit (omit for unlimited)"),
+    showOnPublicList: z
+      .boolean()
+      .optional()
+      .describe("List on the public events page"),
+    groupID: z
+      .string()
+      .optional()
+      .describe("Attach to an existing group by ID"),
+    groupEditToken: z
+      .string()
+      .optional()
+      .describe("Edit token of the group (required when groupID is given)"),
   },
   async (args) => {
     const body: JsonBody = {
@@ -136,7 +167,9 @@ server.tool(
     const { ok, status, data } = await gathioPost("/event", body);
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }
@@ -166,10 +199,16 @@ server.tool(
     groupDescription: z.string().describe("Description (Markdown supported)"),
     creatorEmail: z.string().optional().describe("Organiser email"),
     hostName: z.string().optional().describe("Host display name"),
-    showOnPublicList: z.boolean().optional().describe("Show on the public events page"),
+    showOnPublicList: z
+      .boolean()
+      .optional()
+      .describe("Show on the public events page"),
   },
   async (args) => {
-    const body: JsonBody = { eventGroupName: args.groupName, eventGroupDescription: args.groupDescription };
+    const body: JsonBody = {
+      eventGroupName: args.groupName,
+      eventGroupDescription: args.groupDescription,
+    };
     if (args.creatorEmail) body.creatorEmail = args.creatorEmail;
     if (args.hostName) body.hostName = args.hostName;
     if (args.showOnPublicList) body.showOnPublicList = "1";
@@ -177,7 +216,9 @@ server.tool(
     const { ok, status, data } = await gathioPost("/group", body);
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }
@@ -205,13 +246,20 @@ server.tool(
   {
     eventName: z.string().describe("Event title"),
     eventLocation: z.string().describe("Physical or virtual location"),
-    eventStart: z.string().describe("First occurrence start in 'YYYY-MM-DDTHH:mm' format"),
-    eventEnd: z.string().describe("First occurrence end in 'YYYY-MM-DDTHH:mm' format"),
+    eventStart: z
+      .string()
+      .describe("First occurrence start in 'YYYY-MM-DDTHH:mm' format"),
+    eventEnd: z
+      .string()
+      .describe("First occurrence end in 'YYYY-MM-DDTHH:mm' format"),
     timezone: z.string().describe("IANA timezone, e.g. 'America/Los_Angeles'"),
     eventDescription: z.string().describe("Description (Markdown supported)"),
     creatorEmail: z.string().optional().describe("Organiser email"),
     hostName: z.string().optional().describe("Host display name"),
-    showOnPublicList: z.boolean().optional().describe("Show on the public events page"),
+    showOnPublicList: z
+      .boolean()
+      .optional()
+      .describe("Show on the public events page"),
     // Recurrence fields
     recurrenceFrequency: z
       .enum(["weekly", "biweekly", "monthly"])
@@ -222,11 +270,15 @@ server.tool(
       .min(0)
       .max(6)
       .optional()
-      .describe("Day of week (0=Sun … 6=Sat). Required for weekly/biweekly and monthly nth-weekday."),
+      .describe(
+        "Day of week (0=Sun … 6=Sat). Required for weekly/biweekly and monthly nth-weekday.",
+      ),
     recurrenceMonthlyType: z
       .enum(["day-of-month", "nth-weekday"])
       .optional()
-      .describe("For monthly frequency: repeat on the same date each month, or on the Nth weekday."),
+      .describe(
+        "For monthly frequency: repeat on the same date each month, or on the Nth weekday.",
+      ),
     recurrenceDayOfMonth: z
       .number()
       .int()
@@ -235,19 +287,31 @@ server.tool(
       .optional()
       .describe("Day of month (1–31). Required for monthly day-of-month."),
     recurrenceNth: z
-      .union([z.literal(-1), z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
+      .union([
+        z.literal(-1),
+        z.literal(1),
+        z.literal(2),
+        z.literal(3),
+        z.literal(4),
+      ])
       .optional()
-      .describe("Which occurrence of the weekday in the month: 1=first, 2=second, 3=third, 4=fourth, -1=last. Required for monthly nth-weekday."),
+      .describe(
+        "Which occurrence of the weekday in the month: 1=first, 2=second, 3=third, 4=fourth, -1=last. Required for monthly nth-weekday.",
+      ),
     recurrenceTime: z
       .string()
       .regex(/^\d{2}:\d{2}$/)
-      .describe("Recurring start time in HH:MM format (should match the time in eventStart)"),
+      .describe(
+        "Recurring start time in HH:MM format (should match the time in eventStart)",
+      ),
     recurrenceDurationMinutes: z
       .number()
       .int()
       .min(1)
       .describe("Event duration in minutes"),
-    recurrenceTimezone: z.string().describe("IANA timezone for the recurrence (should match timezone)"),
+    recurrenceTimezone: z
+      .string()
+      .describe("IANA timezone for the recurrence (should match timezone)"),
   },
   async (args) => {
     const body: JsonBody = {
@@ -274,13 +338,18 @@ server.tool(
       body.recurrenceDayOfMonth = String(args.recurrenceDayOfMonth);
     if (args.recurrenceNth !== undefined)
       body.recurrenceNth = String(args.recurrenceNth);
-    if (args.recurrenceMonthlyType === "nth-weekday" && args.recurrenceDayOfWeek !== undefined)
+    if (
+      args.recurrenceMonthlyType === "nth-weekday" &&
+      args.recurrenceDayOfWeek !== undefined
+    )
       body.recurrenceNthDayOfWeek = String(args.recurrenceDayOfWeek);
 
     const { ok, status, data } = await gathioPost("/event", body);
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }
@@ -325,7 +394,9 @@ server.tool(
     const { ok, status, data } = await gathioGet(path);
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }
@@ -344,12 +415,12 @@ server.tool(
     eventID: z.string().describe("The event ID (short alphanumeric slug)"),
   },
   async (args) => {
-    const { ok, status, data } = await gathioGet(
-      `/api/event/${args.eventID}`,
-    );
+    const { ok, status, data } = await gathioGet(`/api/event/${args.eventID}`);
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }
@@ -379,7 +450,9 @@ server.tool(
     );
     if (!ok) {
       return {
-        content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
+        content: [
+          { type: "text", text: `Error ${status}: ${errorText(data)}` },
+        ],
         isError: true,
       };
     }

@@ -24,7 +24,6 @@ $("#editModal").on("shown.bs.modal", function (e) {
   autosize(ta);
   ta.style.display = "";
   autosize.update(ta);
-
 });
 
 function editEventGroupForm() {
@@ -39,14 +38,19 @@ function editEventGroupForm() {
       publicCheckbox: window.groupData.showOnPublicList,
       recurrenceEnabled: !!rec.enabled,
       recurrenceFrequency: rec.frequency || "weekly",
-      recurrenceDayOfWeek: rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
+      recurrenceDayOfWeek:
+        rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
       recurrenceMonthlyType: rec.monthlyType || "day-of-month",
-      recurrenceDayOfMonth: rec.dayOfMonth !== undefined ? String(rec.dayOfMonth) : "1",
+      recurrenceDayOfMonth:
+        rec.dayOfMonth !== undefined ? String(rec.dayOfMonth) : "1",
       recurrenceNth: rec.nth !== undefined ? String(rec.nth) : "1",
-      recurrenceNthDayOfWeek: rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
+      recurrenceNthDayOfWeek:
+        rec.dayOfWeek !== undefined ? String(rec.dayOfWeek) : "1",
       recurrenceTime: rec.time || "18:00",
-      recurrenceTimezone: rec.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      recurrenceDurationMinutes: rec.durationMinutes !== undefined ? String(rec.durationMinutes) : "60",
+      recurrenceTimezone:
+        rec.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      recurrenceDurationMinutes:
+        rec.durationMinutes !== undefined ? String(rec.durationMinutes) : "60",
     },
     init() {
       this.data.publicCheckbox = window.groupData.showOnPublicList;

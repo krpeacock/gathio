@@ -17,8 +17,12 @@ router.get(
       return;
     }
     // Omit sensitive fields
-    const { editToken, editPassword, viewPassword, privateKey, ...safe } = event as Record<string, unknown>;
-    void editToken; void editPassword; void viewPassword; void privateKey;
+    const { editToken, editPassword, viewPassword, privateKey, ...safe } =
+      event as Record<string, unknown>;
+    void editToken;
+    void editPassword;
+    void viewPassword;
+    void privateKey;
     res.json(safe);
   },
 );
@@ -49,13 +53,15 @@ router.get(
       filter.end = { $gte: new Date() };
     }
 
-    const events = await Event.find(filter)
-      .sort({ start: 1 })
-      .lean();
+    const events = await Event.find(filter).sort({ start: 1 }).lean();
 
     const sanitized = events.map((ev) => {
-      const { editToken, editPassword, viewPassword, privateKey, ...safe } = ev as Record<string, unknown>;
-      void editToken; void editPassword; void viewPassword; void privateKey;
+      const { editToken, editPassword, viewPassword, privateKey, ...safe } =
+        ev as Record<string, unknown>;
+      void editToken;
+      void editPassword;
+      void viewPassword;
+      void privateKey;
       return safe;
     });
 

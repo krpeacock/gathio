@@ -75,7 +75,10 @@ interface EventGroupData {
   recurrenceDurationMinutes?: string;
 }
 
-export type ValidatedEventGroupData = Omit<EventGroupData, "publicCheckbox" | "recurrenceEnabled"> & {
+export type ValidatedEventGroupData = Omit<
+  EventGroupData,
+  "publicCheckbox" | "recurrenceEnabled"
+> & {
   publicBoolean: boolean;
   recurrenceEnabled: boolean;
 };
@@ -283,43 +286,76 @@ export const validateGroupData = (
   if (recurrenceEnabled) {
     const freq = groupData.recurrenceFrequency;
     if (!freq || !["weekly", "biweekly", "monthly"].includes(freq)) {
-      errors.push({ message: "Recurrence frequency must be weekly, biweekly, or monthly.", field: "recurrenceFrequency" });
+      errors.push({
+        message: "Recurrence frequency must be weekly, biweekly, or monthly.",
+        field: "recurrenceFrequency",
+      });
     }
-    if ((freq === "weekly" || freq === "biweekly")) {
+    if (freq === "weekly" || freq === "biweekly") {
       const dow = Number(groupData.recurrenceDayOfWeek);
       if (isNaN(dow) || dow < 0 || dow > 6) {
-        errors.push({ message: "Day of week must be 0–6.", field: "recurrenceDayOfWeek" });
+        errors.push({
+          message: "Day of week must be 0–6.",
+          field: "recurrenceDayOfWeek",
+        });
       }
     }
     if (freq === "monthly") {
       const monthlyType = groupData.recurrenceMonthlyType || "day-of-month";
       if (!["day-of-month", "nth-weekday"].includes(monthlyType)) {
-        errors.push({ message: "Monthly type must be day-of-month or nth-weekday.", field: "recurrenceMonthlyType" });
+        errors.push({
+          message: "Monthly type must be day-of-month or nth-weekday.",
+          field: "recurrenceMonthlyType",
+        });
       } else if (monthlyType === "day-of-month") {
         const dom = Number(groupData.recurrenceDayOfMonth);
         if (isNaN(dom) || dom < 1 || dom > 31) {
-          errors.push({ message: "Day of month must be 1–31.", field: "recurrenceDayOfMonth" });
+          errors.push({
+            message: "Day of month must be 1–31.",
+            field: "recurrenceDayOfMonth",
+          });
         }
       } else {
         const nth = Number(groupData.recurrenceNth);
         if (![-1, 1, 2, 3, 4].includes(nth)) {
-          errors.push({ message: "Occurrence must be 1–4 or -1 (last).", field: "recurrenceNth" });
+          errors.push({
+            message: "Occurrence must be 1–4 or -1 (last).",
+            field: "recurrenceNth",
+          });
         }
         const ndow = Number(groupData.recurrenceNthDayOfWeek);
         if (isNaN(ndow) || ndow < 0 || ndow > 6) {
-          errors.push({ message: "Day of week must be 0–6.", field: "recurrenceNthDayOfWeek" });
+          errors.push({
+            message: "Day of week must be 0–6.",
+            field: "recurrenceNthDayOfWeek",
+          });
         }
       }
     }
-    if (!groupData.recurrenceTime || !/^\d{2}:\d{2}$/.test(groupData.recurrenceTime)) {
-      errors.push({ message: "Recurrence time must be in HH:MM format.", field: "recurrenceTime" });
+    if (
+      !groupData.recurrenceTime ||
+      !/^\d{2}:\d{2}$/.test(groupData.recurrenceTime)
+    ) {
+      errors.push({
+        message: "Recurrence time must be in HH:MM format.",
+        field: "recurrenceTime",
+      });
     }
-    if (!groupData.recurrenceTimezone || !moment.tz.zone(groupData.recurrenceTimezone)) {
-      errors.push({ message: "A valid timezone is required for recurrence.", field: "recurrenceTimezone" });
+    if (
+      !groupData.recurrenceTimezone ||
+      !moment.tz.zone(groupData.recurrenceTimezone)
+    ) {
+      errors.push({
+        message: "A valid timezone is required for recurrence.",
+        field: "recurrenceTimezone",
+      });
     }
     const dur = Number(groupData.recurrenceDurationMinutes);
     if (isNaN(dur) || dur < 1) {
-      errors.push({ message: "Duration must be at least 1 minute.", field: "recurrenceDurationMinutes" });
+      errors.push({
+        message: "Duration must be at least 1 minute.",
+        field: "recurrenceDurationMinutes",
+      });
     }
   }
 

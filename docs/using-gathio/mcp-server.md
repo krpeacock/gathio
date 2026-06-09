@@ -27,12 +27,12 @@ This produces `packages/mcp-server/dist/index.js`.
 
 The server is configured entirely through environment variables:
 
-| Variable         | Required | Description                                                    |
-| ---------------- | -------- | -------------------------------------------------------------- |
-| `GATHIO_URL`     | Yes      | Base URL of your gathio instance, e.g. `https://events.example.com` |
-| `GATHIO_API_KEY` | Yes*     | Raw API key (the secret, not the hash). See [API Keys](../running-gathio/api-keys.md). |
+| Variable         | Required | Description                                                                            |
+| ---------------- | -------- | -------------------------------------------------------------------------------------- |
+| `GATHIO_URL`     | Yes      | Base URL of your gathio instance, e.g. `https://events.example.com`                    |
+| `GATHIO_API_KEY` | Yes\*    | Raw API key (the secret, not the hash). See [API Keys](../running-gathio/api-keys.md). |
 
-*Required if your instance has `api_keys` or `creator_email_addresses` configured. Safe to omit on a fully open dev instance.
+\*Required if your instance has `api_keys` or `creator_email_addresses` configured. Safe to omit on a fully open dev instance.
 
 ## Connecting to Claude Desktop
 
@@ -76,6 +76,7 @@ Required fields: `eventName`, `eventStart`, `eventEnd`, `timezone`
 Optional fields: `eventLocation`, `eventDescription`, `creatorEmail`, `hostName`, `maxAttendees`, `showOnPublicList`, `groupID`, `groupEditToken`
 
 Example prompt:
+
 > "Create an event called 'Board Game Night' at The Usual Spot on Friday June 20th from 7pm to 10pm Pacific."
 
 ### `create_group`
@@ -92,14 +93,15 @@ Required: `groupName`, `recurrenceFrequency`, `recurrenceTime`, `recurrenceDurat
 
 Frequency options and required additional fields:
 
-| `recurrenceFrequency` | Additional required fields |
-| --------------------- | -------------------------- |
-| `weekly`              | `recurrenceDayOfWeek` (0=Sun … 6=Sat) |
-| `biweekly`            | `recurrenceDayOfWeek` |
-| `monthly` day-of-month | `recurrenceMonthlyType: "day-of-month"`, `recurrenceDayOfMonth` |
-| `monthly` nth-weekday | `recurrenceMonthlyType: "nth-weekday"`, `recurrenceDayOfWeek`, `recurrenceNth` (1–4 or -1 for last) |
+| `recurrenceFrequency`  | Additional required fields                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| `weekly`               | `recurrenceDayOfWeek` (0=Sun … 6=Sat)                                                               |
+| `biweekly`             | `recurrenceDayOfWeek`                                                                               |
+| `monthly` day-of-month | `recurrenceMonthlyType: "day-of-month"`, `recurrenceDayOfMonth`                                     |
+| `monthly` nth-weekday  | `recurrenceMonthlyType: "nth-weekday"`, `recurrenceDayOfWeek`, `recurrenceNth` (1–4 or -1 for last) |
 
 Example prompt:
+
 > "Set up a recurring 'Weekly Standup' every Tuesday at 9am Pacific for 30 minutes."
 
 ### `list_events`

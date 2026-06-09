@@ -84,7 +84,10 @@ function editEventForm() {
       }
       formData.append("imageUpload", this.$refs.eventImageUpload.files[0]);
       if (window.eventData.adminMagicLinkToken) {
-        formData.append("adminMagicLinkToken", window.eventData.adminMagicLinkToken);
+        formData.append(
+          "adminMagicLinkToken",
+          window.eventData.adminMagicLinkToken,
+        );
         formData.append("adminEmail", window.eventData.adminEmail);
       } else {
         formData.append("editToken", window.eventData.editToken);

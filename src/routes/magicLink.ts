@@ -110,7 +110,9 @@ router.post("/magic-link/admin", async (req: Request, res: Response) => {
 
   req.emailService.sendEmailFromTemplate({
     to: email,
-    subject: "Admin magic link for " + (res.locals.config?.general.site_name || "Gathio"),
+    subject:
+      "Admin magic link for " +
+      (res.locals.config?.general.site_name || "Gathio"),
     templateName: "adminMagicLink",
     templateData: {
       token,
