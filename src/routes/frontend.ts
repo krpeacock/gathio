@@ -871,10 +871,11 @@ router.get("/:eventID", async (req: Request, res: Response) => {
     let upcomingOccurrences: Array<{ id: string; displayDate: string }> = [];
     if (event.recurrenceTemplate && event.id) {
       const now = new Date();
+      const threeMonthsFromNow = moment().add(3, "months").toDate();
       const instances = await Event.find({
         recurrenceId: event.id,
         recurrenceTemplate: { $ne: true },
-        start: { $gte: now },
+        start: { $gte: now, $lt: threeMonthsFromNow },
       })
         .select("id start timezone")
         .sort("start")
