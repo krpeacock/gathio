@@ -177,7 +177,6 @@ export async function generateRecurringEvents(): Promise<void> {
 
       const end = start.clone().add(rule.durationMinutes, "minutes");
       const eventID = generateEventID();
-      const editToken = generateEditToken();
 
       const instance = new Event({
         id: eventID,
@@ -192,7 +191,7 @@ export async function generateRecurringEvents(): Promise<void> {
         url: template.url,
         creatorEmail: template.creatorEmail,
         hostName: template.hostName,
-        editToken,
+        editToken: template.editToken,
         eventGroup: template.eventGroup,
         usersCanAttend: template.usersCanAttend,
         showUsersList: template.showUsersList,
