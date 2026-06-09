@@ -153,7 +153,7 @@ export async function generateRecurringEvents(): Promise<void> {
   }
 
   // --- Event-level recurrence (new) ---
-  const templates = await Event.find({ recurrenceTemplate: true });
+  const templates = await Event.find({ recurrenceTemplate: true }).lean();
 
   for (const template of templates) {
     const rule = template.recurrence;
