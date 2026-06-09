@@ -45,7 +45,7 @@ export function computeOccurrences(
   const occurrences: moment.Moment[] = [];
 
   // Start from the first candidate on or after `from`
-  let cursor = from.clone().tz(rule.timezone).startOf("day");
+  const cursor = from.clone().tz(rule.timezone).startOf("day");
 
   while (cursor.isBefore(until)) {
     let candidate: moment.Moment | null = null;
@@ -66,8 +66,18 @@ export function computeOccurrences(
         if (cursor.date() === 1) {
           const resolved = nthWeekdayOfMonth(cursor.year(), cursor.month(), rule.dayOfWeek ?? 0, rule.nth ?? 1);
           if (resolved) {
-            // Convert to rule timezone before setting time so 18:00 means 18:00 local, not 18:00 UTC
-            candidate = resolved.clone().tz(rule.timezone).hour(hours).minute(minutes).second(0).millisecond(0);
+            // Use the UTC calendar date (year/month/date) from the resolved moment and set
+            // the time directly in the rule timezone. DO NOT use .tz().hour() because that
+            // converts UTC midnight to the previous local day before setting hour.
+            candidate = moment.tz({
+              year: resolved.year(),
+              month: resolved.month(),
+              date: resolved.date(),
+              hour: hours,
+              minute: minutes,
+              second: 0,
+              millisecond: 0,
+            }, rule.timezone);
           }
         }
       }
@@ -106,6 +116,10 @@ export async function generateRecurringEvents(): Promise<void> {
     const rule = group.recurrence;
     if (!rule) continue;
 
+    // If this group has an event-level template, let the template system handle it
+    const hasTemplate = await Event.exists({ eventGroup: group._id, recurrenceTemplate: true });
+    if (hasTemplate) continue;
+
     const occurrences = computeOccurrences(rule, now, until);
     try {
 
@@ -115,11 +129,16 @@ export async function generateRecurringEvents(): Promise<void> {
     }).select("start");
 
     const existingStarts = new Set(
-      existingEvents.map((e) => moment(e.start).tz(rule.timezone).toISOString()),
+      existingEvents.map((e) => moment(e.start).toISOString()),
+    );
+
+    const excludedStarts = new Set(
+      (group.excludedDates ?? []).map((d) => moment(d).toISOString()),
     );
 
     for (const start of occurrences) {
       if (existingStarts.has(start.toISOString())) continue;
+      if (excludedStarts.has(start.toISOString())) continue;
 
       const end = start.clone().add(rule.durationMinutes, "minutes");
       const eventID = generateEventID();
@@ -174,13 +193,18 @@ export async function generateRecurringEvents(): Promise<void> {
     }).select("start");
 
     const existingStarts = new Set(
-      existingInstances.map((e) => moment(e.start).tz(rule.timezone).toISOString()),
+      existingInstances.map((e) => moment(e.start).toISOString()),
     );
     // The template event IS the first occurrence — never duplicate it
-    existingStarts.add(moment(template.start).tz(rule.timezone).toISOString());
+    existingStarts.add(moment(template.start).toISOString());
+
+    const excludedStarts = new Set(
+      (template.recurrenceExcludedDates ?? []).map((d) => moment(d).toISOString()),
+    );
 
     for (const start of occurrences) {
       if (existingStarts.has(start.toISOString())) continue;
+      if (excludedStarts.has(start.toISOString())) continue;
 
       const end = start.clone().add(rule.durationMinutes, "minutes");
       const eventID = generateEventID();
