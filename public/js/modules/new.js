@@ -79,6 +79,21 @@ function newEventForm() {
       this.data.maxAttendeesCheckbox = false;
       this.data.publicCheckbox = false;
       this.data.approveRegistrationsCheckbox = false;
+
+      // Auto-populate recurrenceTime from eventStart when recurrence is enabled
+      this.$watch("data.recurrenceEnabled", (enabled) => {
+        if (enabled) {
+          if (!this.data.recurrenceTime && this.data.eventStart) {
+            this.data.recurrenceTime = this.data.eventStart.substring(11, 16);
+          }
+        }
+      });
+      // Keep recurrenceTime in sync when the event start time changes
+      this.$watch("data.eventStart", () => {
+        if (this.data.recurrenceEnabled && this.data.eventStart) {
+          this.data.recurrenceTime = this.data.eventStart.substring(11, 16);
+        }
+      });
     },
     updateEventEnd() {
       if (
@@ -95,6 +110,9 @@ function newEventForm() {
       for (const [key, value] of Object.entries(this.data)) {
         formData.append(key, value);
       }
+      // Read recurrenceTimezone directly from the DOM select since it has no x-model
+      const recTz = document.getElementById("recurrenceTimezone");
+      if (recTz) formData.set("recurrenceTimezone", recTz.value);
       formData.append("imageUpload", this.$refs.eventImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
       formData.append(
@@ -140,6 +158,16 @@ function newEventGroupForm() {
       hostName: "",
       creatorEmail: "",
       publicCheckbox: false,
+      recurrenceEnabled: false,
+      recurrenceFrequency: "weekly",
+      recurrenceDayOfWeek: "1",
+      recurrenceMonthlyType: "day-of-month",
+      recurrenceDayOfMonth: "1",
+      recurrenceNth: "1",
+      recurrenceNthDayOfWeek: "1",
+      recurrenceTime: "18:00",
+      recurrenceDurationMinutes: "60",
+      recurrenceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     init() {
       // Reset checkboxes
@@ -154,6 +182,9 @@ function newEventGroupForm() {
       for (const [key, value] of Object.entries(this.data)) {
         formData.append(key, value);
       }
+      // Read recurrenceTimezone directly from the DOM select since it has no x-model
+      const recTz = document.getElementById("recurrenceTimezone");
+      if (recTz) formData.set("recurrenceTimezone", recTz.value);
       formData.append("imageUpload", this.$refs.eventGroupImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
       formData.append(

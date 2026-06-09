@@ -135,6 +135,29 @@ router.post(
     let recurrence: object | undefined;
     let recurrenceTemplate = false;
     if (recurrenceEnabled) {
+      const recTime = req.body.recurrenceTime as string | undefined;
+      const recTz = req.body.recurrenceTimezone as string | undefined;
+      if (!recTime || !/^\d{2}:\d{2}$/.test(recTime)) {
+        return res.status(400).json({
+          errors: [
+            {
+              message:
+                "Recurrence start time is required (HH:MM format).",
+              field: "recurrenceTime",
+            },
+          ],
+        });
+      }
+      if (!recTz || !moment.tz.zone(recTz)) {
+        return res.status(400).json({
+          errors: [
+            {
+              message: "A valid timezone is required for recurrence.",
+              field: "recurrenceTimezone",
+            },
+          ],
+        });
+      }
       const isNthWeekday = req.body.recurrenceMonthlyType === "nth-weekday";
       recurrence = {
         enabled: true,
