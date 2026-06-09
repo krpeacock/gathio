@@ -46,7 +46,13 @@
 
 <script>
   $('#deleteImage').click(function () {
+    var postData = {};
+    {{#if isAdminAccess}}
+    postData = { adminMagicLinkToken: window.eventData.adminMagicLinkToken, adminEmail: window.eventData.adminEmail };
+    $.post('/deleteimage/{{eventData.id}}/admin', postData, function (response) {
+    {{else}}
     $.post('/deleteimage/{{eventData.id}}/{{eventData.editToken}}', function (response) {
+    {{/if}}
       if (response === "Success") {
         location.reload();
       } else {

@@ -19,6 +19,7 @@ import {
 } from "./activitypub.js";
 import Event from "./models/Event.js";
 import EventGroup from "./models/EventGroup.js";
+import MagicLink from "./models/MagicLink.js";
 import path from "path";
 import i18next from "i18next";
 
@@ -172,7 +173,19 @@ router.post("/deleteimage/:eventID/:editToken", async (req, res) => {
     id: req.params.eventID,
   });
 
-  if (event.editToken === submittedEditToken) {
+  // Support admin magic link bypass
+  let authorized = event.editToken === submittedEditToken;
+  if (!authorized && req.body.adminMagicLinkToken && req.body.adminEmail) {
+    const adminLink = await MagicLink.findOne({
+      token: req.body.adminMagicLinkToken,
+      email: req.body.adminEmail,
+      expiryTime: { $gt: new Date() },
+      permittedActions: "editAnyEvent",
+    });
+    if (adminLink) authorized = true;
+  }
+
+  if (authorized) {
     // Token matches
     if (event.image) {
       eventImage = event.image;

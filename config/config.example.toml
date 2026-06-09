@@ -34,6 +34,11 @@ mail_service = "none"
 # For example:
 # creator_email_addresses = ["test@test.com", "admin@test.com"]
 creator_email_addresses = []
+# An array of email addresses which are permitted to edit any event via a magic
+# link. Admins can request a magic link at /admin.
+# For example:
+# admin_email_addresses = ["admin@test.com"]
+admin_email_addresses = []
 
 # API keys allow programmatic event and group creation without a magic link.
 # Generate a key with: npx tsx scripts/generate-api-key.ts <label>

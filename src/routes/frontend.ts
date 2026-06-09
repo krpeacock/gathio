@@ -119,6 +119,7 @@ interface EventForLocationAccess {
 function resolveLocationAccess(
   event: EventForLocationAccess,
   query: Record<string, string | string[] | undefined>,
+  adminOverride = false,
 ): {
   viewerApprovedForLocation: boolean;
   viewerRegistered: boolean;
@@ -128,9 +129,9 @@ function resolveLocationAccess(
 } {
   const eventEditToken = event.editToken;
   const approveRegistrations = !!event.approveRegistrations;
-  // Editing enabled if correct edit token present
-  let editingEnabled = false;
-  if (query && Object.keys(query).length) {
+  // Editing enabled if correct edit token present, or admin override
+  let editingEnabled = adminOverride;
+  if (!editingEnabled && query && Object.keys(query).length) {
     if (query.e && query.e === eventEditToken) {
       editingEnabled = true;
     }
@@ -244,6 +245,40 @@ router.get("/new/:magicLinkToken", async (req: Request, res: Response) => {
     creatorEmail: magicLink.email,
     timezones: TIMEZONES,
     defaultTimezone: "America/Los_Angeles",
+  });
+});
+
+router.get("/admin", (_: Request, res: Response) => {
+  const adminEmails = res.locals.config?.general.admin_email_addresses;
+  if (!adminEmails?.length) {
+    return res.status(404).render("404", frontendConfig(res));
+  }
+  return res.render("adminMagicLink", frontendConfig(res));
+});
+
+router.get("/admin/:magicLinkToken", async (req: Request, res: Response) => {
+  const adminEmails = res.locals.config?.general.admin_email_addresses;
+  if (!adminEmails?.length) {
+    return res.status(404).render("404", frontendConfig(res));
+  }
+  const magicLink = await MagicLink.findOne({
+    token: req.params.magicLinkToken,
+    expiryTime: { $gt: new Date() },
+    permittedActions: "editAnyEvent",
+  });
+  if (!magicLink) {
+    return res.render("adminMagicLink", {
+      ...frontendConfig(res),
+      message: {
+        type: "danger",
+        text: "This admin magic link is invalid or has expired. Please request a new one.",
+      },
+    });
+  }
+  return res.render("adminPanel", {
+    ...frontendConfig(res),
+    adminToken: req.params.magicLinkToken,
+    adminEmail: magicLink.email,
   });
 });
 
@@ -399,6 +434,22 @@ router.get("/:eventID", async (req: Request, res: Response) => {
         { firstLoad: false },
       );
     }
+    // Check admin magic link credentials
+    const adminToken = req.query.adminToken as string | undefined;
+    const adminEmail = req.query.adminEmail as string | undefined;
+    let isAdminAccess = false;
+    if (adminToken && adminEmail) {
+      const adminLink = await MagicLink.findOne({
+        token: adminToken,
+        email: adminEmail,
+        expiryTime: { $gt: new Date() },
+        permittedActions: "editAnyEvent",
+      });
+      if (adminLink) {
+        isAdminAccess = true;
+      }
+    }
+
     const {
       viewerApprovedForLocation,
       viewerRegistered,
@@ -408,6 +459,7 @@ router.get("/:eventID", async (req: Request, res: Response) => {
     } = resolveLocationAccess(
       event,
       req.query as Record<string, string | string[] | undefined>,
+      isAdminAccess,
     );
     const approveRegistrations = !!event.approveRegistrations;
     const parsedLocation = viewerApprovedForLocation
@@ -615,8 +667,11 @@ router.get("/:eventID", async (req: Request, res: Response) => {
           startForDateInput: parsedStartForDateInput,
           endForDateInput: parsedEndForDateInput,
           image: event.image,
-          editToken: editingEnabled ? eventEditToken : null,
+          editToken: (editingEnabled && !isAdminAccess) ? eventEditToken : null,
+          adminMagicLinkToken: isAdminAccess ? adminToken : null,
+          adminEmail: isAdminAccess ? adminEmail : null,
         },
+        isAdminAccess,
         message: getMessage(req.query.m as string),
       });
     }

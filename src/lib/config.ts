@@ -30,6 +30,7 @@ export interface GathioConfig {
     max_comment_length: number;
     mail_service: "nodemailer" | "sendgrid" | "mailgun" | "none";
     creator_email_addresses: string[];
+    admin_email_addresses?: string[];
   };
   api_keys?: ApiKeyEntry[];
   database: {

@@ -83,7 +83,12 @@ function editEventForm() {
         formData.append(key, value);
       }
       formData.append("imageUpload", this.$refs.eventImageUpload.files[0]);
-      formData.append("editToken", window.eventData.editToken);
+      if (window.eventData.adminMagicLinkToken) {
+        formData.append("adminMagicLinkToken", window.eventData.adminMagicLinkToken);
+        formData.append("adminEmail", window.eventData.adminEmail);
+      } else {
+        formData.append("editToken", window.eventData.editToken);
+      }
       try {
         const response = await fetch(`/event/${window.eventData.id}`, {
           method: "PUT",

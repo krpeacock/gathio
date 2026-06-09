@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export type MagicLinkAction = "createEvent";
+export type MagicLinkAction = "createEvent" | "editAnyEvent";
 
 export interface MagicLink {
   id: string;

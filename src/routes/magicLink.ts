@@ -65,4 +65,64 @@ router.post("/magic-link/event/create", async (req: Request, res: Response) => {
   });
 });
 
+router.post("/magic-link/admin", async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    res.render("adminMagicLink", {
+      ...frontendConfig(res),
+      message: {
+        type: "danger",
+        text: "Please provide an email address.",
+      },
+    });
+    return;
+  }
+  const allowedEmails = res.locals.config?.general.admin_email_addresses;
+  if (!allowedEmails?.length) {
+    res.render("adminMagicLink", {
+      ...frontendConfig(res),
+      message: {
+        type: "danger",
+        text: "No admin email addresses are configured on this instance.",
+      },
+    });
+    return;
+  }
+  if (!allowedEmails.includes(email)) {
+    res.render("adminMagicLink", {
+      ...frontendConfig(res),
+      message: {
+        type: "success",
+        text: "Thanks! If this email address is an admin, you should receive an email with a magic link.",
+      },
+    });
+    return;
+  }
+  const token = generateMagicLinkToken();
+  const magicLink = new MagicLink({
+    email,
+    token,
+    expiryTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    permittedActions: ["editAnyEvent"],
+  });
+  await magicLink.save();
+  await MagicLink.deleteMany({ expiryTime: { $lt: new Date() } });
+
+  req.emailService.sendEmailFromTemplate({
+    to: email,
+    subject: "Admin magic link for " + (res.locals.config?.general.site_name || "Gathio"),
+    templateName: "adminMagicLink",
+    templateData: {
+      token,
+    },
+  });
+  res.render("adminMagicLink", {
+    ...frontendConfig(res),
+    message: {
+      type: "success",
+      text: "Thanks! If this email address is an admin, you should receive an email with a magic link.",
+    },
+  });
+});
+
 export default router;

@@ -1,0 +1,26 @@
+<main class="page">
+  <h2 class="mb-4">Admin login</h2>
+
+  <form
+    action="/magic-link/admin"
+    method="post"
+    hx-post="/magic-link/admin"
+    hx-target="article"
+  >
+    <p>
+      Enter your admin email address to receive a magic link that allows you to edit any event on this instance.
+    </p>
+    {{#if message}}
+      <div class="alert alert-{{message.type}}" role="alert">
+        {{message.text}}
+      </div>
+    {{/if}}
+    <div class="form-group">
+      <label for="email">Email address</label>
+      <input type="email" class="form-control" id="email" placeholder="Email address" required name="email">
+    </div>
+    <div class="form-group text-center">
+      <button type="submit" class="button button--primary w-50">Request admin magic link</button>
+    </div>
+  </form>
+</main>

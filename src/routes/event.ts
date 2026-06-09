@@ -11,6 +11,7 @@ import {
 import { validateEventData } from "../util/validation.js";
 import { addToLog } from "../helpers.js";
 import Event, { getApprovedAttendeeCount } from "../models/Event.js";
+import MagicLink from "../models/MagicLink.js";
 import EventGroup from "../models/EventGroup.js";
 import {
   broadcastCreateMessage,
@@ -330,8 +331,22 @@ router.put(
           ],
         });
       }
-      if (event.editToken !== submittedEditToken) {
-        // Token doesn't match
+
+      // Check admin magic link credentials before falling back to editToken
+      let authorized = event.editToken === submittedEditToken;
+      if (!authorized && req.body.adminMagicLinkToken && req.body.adminEmail) {
+        const adminLink = await MagicLink.findOne({
+          token: req.body.adminMagicLinkToken,
+          email: req.body.adminEmail,
+          expiryTime: { $gt: new Date() },
+          permittedActions: "editAnyEvent",
+        });
+        if (adminLink) {
+          authorized = true;
+        }
+      }
+
+      if (!authorized) {
         addToLog(
           "editEvent",
           "error",
@@ -345,7 +360,7 @@ router.put(
           ],
         });
       }
-      // Token matches
+      // Authorized
       // If there is a new image, upload that first
       const eventID = req.params.eventID;
       let eventImageFilename = event.image;

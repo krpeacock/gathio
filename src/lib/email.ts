@@ -19,6 +19,7 @@ type EmailTemplateName =
   | "attendeePendingConfirmation"
   | "createEvent"
   | "createEventGroup"
+  | "adminMagicLink"
   | "createEventMagicLink"
   | "deleteEvent"
   | "editEvent"

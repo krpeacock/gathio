@@ -1,0 +1,37 @@
+<main class="page">
+  <h2 class="mb-4">Admin panel</h2>
+
+  <div class="alert alert-success" role="alert">
+    Authenticated as admin: <strong>{{adminEmail}}</strong>. This session expires in 24 hours.
+  </div>
+
+  <p>Enter an event ID or full event URL to open it in admin editing mode.</p>
+
+  <div class="form-group">
+    <label for="eventInput">Event ID or URL</label>
+    <input type="text" class="form-control" id="eventInput" placeholder="e.g. abc123 or https://{{domain}}/abc123">
+  </div>
+  <div class="form-group text-center">
+    <button id="goToEvent" class="button button--primary w-50"
+      data-admin-token="{{adminToken}}"
+      data-admin-email="{{adminEmail}}">Edit event</button>
+  </div>
+
+  <script>
+    document.getElementById('goToEvent').addEventListener('click', function () {
+      var adminToken = this.dataset.adminToken;
+      var adminEmail = this.dataset.adminEmail;
+      var input = document.getElementById('eventInput').value.trim();
+      if (!input) return;
+      var eventID = input.replace(/^https?:\/\/[^\/]+\//, '').replace(/^\//, '').split('?')[0];
+      if (!eventID) return;
+      window.location.href = '/' + eventID
+        + '?adminToken=' + encodeURIComponent(adminToken)
+        + '&adminEmail=' + encodeURIComponent(adminEmail);
+    });
+
+    document.getElementById('eventInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('goToEvent').click();
+    });
+  </script>
+</main>
