@@ -55,7 +55,12 @@ describe("Recurring events", () => {
     cy.get("#recurrenceTime").should("have.value", start.substring(11, 16));
 
     cy.get("#recurrenceFrequency").select("weekly");
-    cy.get("#recurrenceDayOfWeek").select(String(new Date(start).getDay()));
+    // The day-of-week select must auto-sync to the event's start day — the
+    // server rejects rules whose repeat day contradicts the start date.
+    cy.get("#recurrenceDayOfWeek").should(
+      "have.value",
+      String(new Date(start).getDay()),
+    );
 
     cy.get("#newEventFormSubmit").click();
 
@@ -114,5 +119,29 @@ describe("Recurring events", () => {
       .should("be.visible")
       .and("contain.text", "Recurrence start time is required");
     cy.get("#recurrenceTime").should("have.class", "is-invalid");
+  });
+
+  it("rejects a repeat day that contradicts the event's start date", () => {
+    const start = datetimeLocal(1, 18);
+
+    fillCommonEventFields();
+    cy.get("#eventStart").type(start);
+    cy.get("#eventEnd").type(datetimeLocal(1, 19));
+
+    cy.get("#recurrenceEnabled").check();
+    cy.get("#recurrenceFrequency").select("weekly");
+    // Deliberately pick a different weekday than the start date. The client
+    // validator can't know the server's alignment rule, so this exercises
+    // the server-side rejection and the inline error surfacing.
+    const wrongDay = (new Date(start).getDay() + 1) % 7;
+    cy.get("#recurrenceDayOfWeek").select(String(wrongDay));
+
+    cy.get("#newEventFormSubmit").click();
+
+    cy.url().should("include", "/new");
+    cy.get(".alert.alert-danger")
+      .should("be.visible")
+      .and("contain.text", "Change the repeat day to match");
+    cy.get("#recurrenceDayOfWeek").should("have.class", "is-invalid");
   });
 });

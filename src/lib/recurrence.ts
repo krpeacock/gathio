@@ -12,6 +12,60 @@ const MAX_OCCURRENCES = 5000; // safety bound on series expansion
 const DUPLICATE_KEY_ERROR = 11000;
 
 /**
+ * Returns a human-readable reason a stored rule cannot be used for
+ * occurrence computation, or null if the rule is usable. This is the
+ * runtime safety net behind parseRecurrenceRule's entry-gate validation:
+ * legacy documents (or rows written before strict parsing existed) can
+ * carry empty strings or NaN in numeric fields, and feeding those into
+ * moment produces invalid dates that compare false against every bound —
+ * the series then generates nothing, silently. Checking up front lets the
+ * generator skip the rule with a loud log instead.
+ *
+ * Deliberately lenient about *missing* optional fields (stepping has
+ * defaults for them); strict about *present-but-garbage* values.
+ */
+export function invalidRuleReason(rule: IRecurrenceRule): string | null {
+  if (!["weekly", "biweekly", "monthly"].includes(rule.frequency)) {
+    return `unknown frequency "${rule.frequency}"`;
+  }
+  if (!rule.time || !/^\d{2}:\d{2}$/.test(rule.time)) {
+    return `invalid time "${rule.time}"`;
+  }
+  if (!rule.timezone || !moment.tz.zone(rule.timezone)) {
+    return `invalid timezone "${rule.timezone}"`;
+  }
+  if (!Number.isFinite(rule.durationMinutes) || rule.durationMinutes < 1) {
+    return `invalid durationMinutes ${rule.durationMinutes}`;
+  }
+  if (
+    rule.dayOfWeek !== undefined &&
+    rule.dayOfWeek !== null &&
+    (!Number.isInteger(rule.dayOfWeek) ||
+      rule.dayOfWeek < 0 ||
+      rule.dayOfWeek > 6)
+  ) {
+    return `invalid dayOfWeek ${rule.dayOfWeek}`;
+  }
+  if (
+    rule.dayOfMonth !== undefined &&
+    rule.dayOfMonth !== null &&
+    (!Number.isInteger(rule.dayOfMonth) ||
+      rule.dayOfMonth < 1 ||
+      rule.dayOfMonth > 31)
+  ) {
+    return `invalid dayOfMonth ${rule.dayOfMonth}`;
+  }
+  if (
+    rule.nth !== undefined &&
+    rule.nth !== null &&
+    ![-1, 1, 2, 3, 4].includes(rule.nth)
+  ) {
+    return `invalid nth ${rule.nth}`;
+  }
+  return null;
+}
+
+/**
  * Returns the moment for the nth occurrence of a weekday in a given month.
  * nth = 1–4 for first–fourth; nth = -1 for last.
  */
@@ -119,6 +173,13 @@ export function computeOccurrences(
   from: moment.Moment,
   until: moment.Moment,
 ): moment.Moment[] {
+  // Guard against unusable rules before any moment math: NaN or empty
+  // values produce invalid moments whose comparisons are all false, which
+  // would spin the stepping loop to MAX_OCCURRENCES and return [] with no
+  // indication anything was wrong.
+  if (invalidRuleReason(rule) !== null) {
+    return [];
+  }
   const [hours, minutes] = rule.time.split(":").map(Number);
   const tz = rule.timezone;
   const anchor = resolveAnchor(rule);
@@ -328,6 +389,15 @@ export async function generateRecurringEvents(): Promise<void> {
     const rule = group.recurrence;
     if (!rule) continue;
 
+    const groupRuleProblem = invalidRuleReason(rule);
+    if (groupRuleProblem) {
+      console.error(
+        `Skipping recurrence generation for group ${group.id}: ${groupRuleProblem}. ` +
+          `The stored rule needs to be fixed (edit the group's recurrence settings and re-save).`,
+      );
+      continue;
+    }
+
     // Defer to the event-level template system if one exists for this group.
     const hasTemplate = await Event.exists({
       eventGroup: group._id,
@@ -413,6 +483,15 @@ export async function generateRecurringEvents(): Promise<void> {
   for (const template of templates) {
     const rule = template.recurrence;
     if (!rule?.enabled) continue;
+
+    const templateRuleProblem = invalidRuleReason(rule);
+    if (templateRuleProblem) {
+      console.error(
+        `Skipping recurrence generation for event template ${template.id}: ${templateRuleProblem}. ` +
+          `The stored rule needs to be fixed (edit the event's recurrence settings and re-save).`,
+      );
+      continue;
+    }
 
     try {
       // Persist the anchor on the template itself so subsequent runs are

@@ -1,7 +1,7 @@
 import { Router, Response, Request } from "express";
 import multer from "multer";
 import { generateEditToken, generateEventID } from "../util/generator.js";
-import { validateGroupData } from "../util/validation.js";
+import { validateGroupData, parseRecurrenceRule } from "../util/validation.js";
 import Jimp from "jimp";
 import { addToLog } from "../helpers.js";
 import EventGroup from "../models/EventGroup.js";
@@ -51,6 +51,15 @@ router.post(
       });
     }
 
+    let recurrence;
+    if (groupData.recurrenceEnabled) {
+      const { rule, errors: recurrenceErrors } = parseRecurrenceRule(groupData);
+      if (recurrenceErrors.length > 0 || !rule) {
+        return res.status(400).json({ errors: recurrenceErrors });
+      }
+      recurrence = rule;
+    }
+
     try {
       const groupID = generateEventID();
       const editToken = generateEditToken();
@@ -72,38 +81,6 @@ router.post(
           );
         }
       }
-
-      const isNthWeekday = groupData.recurrenceMonthlyType === "nth-weekday";
-      const recurrence = groupData.recurrenceEnabled
-        ? {
-            enabled: true,
-            frequency: groupData.recurrenceFrequency as
-              | "weekly"
-              | "biweekly"
-              | "monthly",
-            dayOfWeek: isNthWeekday
-              ? groupData.recurrenceNthDayOfWeek !== undefined
-                ? Number(groupData.recurrenceNthDayOfWeek)
-                : undefined
-              : groupData.recurrenceDayOfWeek !== undefined
-                ? Number(groupData.recurrenceDayOfWeek)
-                : undefined,
-            monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as
-              | "day-of-month"
-              | "nth-weekday",
-            dayOfMonth:
-              groupData.recurrenceDayOfMonth !== undefined
-                ? Number(groupData.recurrenceDayOfMonth)
-                : undefined,
-            nth:
-              groupData.recurrenceNth !== undefined
-                ? Number(groupData.recurrenceNth)
-                : undefined,
-            time: groupData.recurrenceTime!,
-            timezone: groupData.recurrenceTimezone!,
-            durationMinutes: Number(groupData.recurrenceDurationMinutes),
-          }
-        : undefined;
 
       const eventGroup = new EventGroup({
         id: groupID,
@@ -242,38 +219,15 @@ router.put(
         eventGroupImageFilename = eventGroupID + ".jpg";
       }
 
-      const isNthWeekdayUpdate =
-        groupData.recurrenceMonthlyType === "nth-weekday";
-      const updatedRecurrence = groupData.recurrenceEnabled
-        ? {
-            enabled: true,
-            frequency: groupData.recurrenceFrequency as
-              | "weekly"
-              | "biweekly"
-              | "monthly",
-            dayOfWeek: isNthWeekdayUpdate
-              ? groupData.recurrenceNthDayOfWeek !== undefined
-                ? Number(groupData.recurrenceNthDayOfWeek)
-                : undefined
-              : groupData.recurrenceDayOfWeek !== undefined
-                ? Number(groupData.recurrenceDayOfWeek)
-                : undefined,
-            monthlyType: (groupData.recurrenceMonthlyType || "day-of-month") as
-              | "day-of-month"
-              | "nth-weekday",
-            dayOfMonth:
-              groupData.recurrenceDayOfMonth !== undefined
-                ? Number(groupData.recurrenceDayOfMonth)
-                : undefined,
-            nth:
-              groupData.recurrenceNth !== undefined
-                ? Number(groupData.recurrenceNth)
-                : undefined,
-            time: groupData.recurrenceTime!,
-            timezone: groupData.recurrenceTimezone!,
-            durationMinutes: Number(groupData.recurrenceDurationMinutes),
-          }
-        : undefined;
+      let updatedRecurrence;
+      if (groupData.recurrenceEnabled) {
+        const { rule, errors: recurrenceErrors } =
+          parseRecurrenceRule(groupData);
+        if (recurrenceErrors.length > 0 || !rule) {
+          return res.status(400).json({ errors: recurrenceErrors });
+        }
+        updatedRecurrence = rule;
+      }
 
       // If the rule's shape changed in a way that moves future occurrences
       // (frequency, weekday, time, timezone, monthly mode, etc.), the stored
