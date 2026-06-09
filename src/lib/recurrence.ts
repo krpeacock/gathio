@@ -106,6 +106,7 @@ export async function generateRecurringEvents(): Promise<void> {
     if (!rule) continue;
 
     const occurrences = computeOccurrences(rule, now, until);
+    try {
 
     const existingEvents = await Event.find({
       eventGroup: group._id,
@@ -125,8 +126,9 @@ export async function generateRecurringEvents(): Promise<void> {
 
       const event = new Event({
         id: eventID,
+        type: "public",
         name: group.name,
-        location: "",
+        location: "TBD",
         start: start.toDate(),
         end: end.toDate(),
         timezone: rule.timezone,
@@ -150,6 +152,9 @@ export async function generateRecurringEvents(): Promise<void> {
         $push: { events: event._id },
       });
     }
+    } catch (err) {
+      console.error(`Recurrence generation failed for group ${group.id}:`, err);
+    }
   }
 
   // --- Event-level recurrence (new) ---
@@ -160,6 +165,7 @@ export async function generateRecurringEvents(): Promise<void> {
     if (!rule?.enabled) continue;
 
     const occurrences = computeOccurrences(rule, now, until);
+    try {
 
     const existingInstances = await Event.find({
       recurrenceId: template.id,
@@ -205,6 +211,9 @@ export async function generateRecurringEvents(): Promise<void> {
       });
 
       await instance.save();
+    }
+    } catch (err) {
+      console.error(`Recurrence generation failed for event template ${template.id}:`, err);
     }
   }
 }
