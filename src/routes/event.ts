@@ -158,6 +158,9 @@ router.post(
         time: req.body.recurrenceTime,
         timezone: req.body.recurrenceTimezone,
         durationMinutes: Number(req.body.recurrenceDurationMinutes),
+        // The template event's start IS the canonical first occurrence.
+        // Pinning it here means subsequent stepping is fully deterministic.
+        anchorDate: startUTC.toDate(),
       };
       recurrenceTemplate = true;
     }
@@ -188,6 +191,10 @@ router.post(
       recurrence,
       recurrenceTemplate,
       recurrenceId: recurrenceTemplate ? eventID : undefined,
+      // Tag the template as occurrence #0 of its own series so the unique
+      // `(recurrenceId, occurrenceKey)` index covers it. Without this, the
+      // first generation run would try to re-insert the template's start.
+      occurrenceKey: recurrenceTemplate ? startUTC.toISOString() : undefined,
       activityPubActor: createActivityPubActor(
         eventID,
         res.locals.config?.general.domain,
