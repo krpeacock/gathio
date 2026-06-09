@@ -201,10 +201,14 @@ server.tool(
 
 server.tool(
   "create_recurring_series",
-  "Create an event group with a recurrence rule. Gathio will automatically generate individual event instances 90 days in advance. Returns the group ID, edit token, and URL.",
+  "Create a recurring event. The provided date/time is the first occurrence; gathio automatically generates future instances 90 days in advance. Returns the event ID, edit token, and URL.",
   {
-    groupName: z.string().describe("Series name"),
-    groupDescription: z.string().describe("Description (Markdown supported)"),
+    eventName: z.string().describe("Event title"),
+    eventLocation: z.string().describe("Physical or virtual location"),
+    eventStart: z.string().describe("First occurrence start in 'YYYY-MM-DDTHH:mm' format"),
+    eventEnd: z.string().describe("First occurrence end in 'YYYY-MM-DDTHH:mm' format"),
+    timezone: z.string().describe("IANA timezone, e.g. 'America/Los_Angeles'"),
+    eventDescription: z.string().describe("Description (Markdown supported)"),
     creatorEmail: z.string().optional().describe("Organiser email"),
     hostName: z.string().optional().describe("Host display name"),
     showOnPublicList: z.boolean().optional().describe("Show on the public events page"),
@@ -237,27 +241,31 @@ server.tool(
     recurrenceTime: z
       .string()
       .regex(/^\d{2}:\d{2}$/)
-      .describe("Event start time in HH:MM format"),
+      .describe("Recurring start time in HH:MM format (should match the time in eventStart)"),
     recurrenceDurationMinutes: z
       .number()
       .int()
       .min(1)
       .describe("Event duration in minutes"),
-    recurrenceTimezone: z.string().describe("IANA timezone for the recurrence"),
+    recurrenceTimezone: z.string().describe("IANA timezone for the recurrence (should match timezone)"),
   },
   async (args) => {
     const body: JsonBody = {
-      eventGroupName: args.groupName,
-      recurrenceEnabled: "1",
+      eventName: args.eventName,
+      eventLocation: args.eventLocation,
+      eventStart: args.eventStart,
+      eventEnd: args.eventEnd,
+      timezone: args.timezone,
+      eventDescription: args.eventDescription,
+      recurrenceEnabled: "true",
       recurrenceFrequency: args.recurrenceFrequency,
       recurrenceTime: args.recurrenceTime,
       recurrenceDurationMinutes: String(args.recurrenceDurationMinutes),
       recurrenceTimezone: args.recurrenceTimezone,
     };
-    if (args.groupDescription) body.eventGroupDescription = args.groupDescription;
     if (args.creatorEmail) body.creatorEmail = args.creatorEmail;
     if (args.hostName) body.hostName = args.hostName;
-    if (args.showOnPublicList) body.showOnPublicList = "1";
+    if (args.showOnPublicList) body.publicCheckbox = "true";
     if (args.recurrenceDayOfWeek !== undefined)
       body.recurrenceDayOfWeek = String(args.recurrenceDayOfWeek);
     if (args.recurrenceMonthlyType)
@@ -266,24 +274,26 @@ server.tool(
       body.recurrenceDayOfMonth = String(args.recurrenceDayOfMonth);
     if (args.recurrenceNth !== undefined)
       body.recurrenceNth = String(args.recurrenceNth);
+    if (args.recurrenceMonthlyType === "nth-weekday" && args.recurrenceDayOfWeek !== undefined)
+      body.recurrenceNthDayOfWeek = String(args.recurrenceDayOfWeek);
 
-    const { ok, status, data } = await gathioPost("/group", body);
+    const { ok, status, data } = await gathioPost("/event", body);
     if (!ok) {
       return {
         content: [{ type: "text", text: `Error ${status}: ${errorText(data)}` }],
         isError: true,
       };
     }
-    const d = data as { id: string; editToken: string; url: string };
+    const d = data as { eventID: string; editToken: string; url: string };
     return {
       content: [
         {
           type: "text",
           text: JSON.stringify({
-            groupID: d.id,
+            eventID: d.eventID,
             editToken: d.editToken,
             url: `${GATHIO_URL}${d.url}`,
-            note: "Recurring instances will be generated automatically within the next 24 hours (or immediately on the next recurrence check).",
+            note: "This is the first occurrence. Future instances will be generated automatically within 90 days.",
           }),
         },
       ],

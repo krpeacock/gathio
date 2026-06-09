@@ -27,6 +27,7 @@ import ical from "ical";
 import { markdownToSanitizedHTML } from "../util/markdown.js";
 import { checkAuth, getConfigMiddleware } from "../lib/middleware.js";
 import { getConfig } from "../lib/config.js";
+import { generateRecurringEvents } from "../lib/recurrence.js";
 import i18next from "i18next";
 moment.locale(i18next.language);
 const config = getConfig();
@@ -128,6 +129,28 @@ router.post(
     // generate RSA keypair for ActivityPub
     const { publicKey, privateKey } = generateRSAKeypair();
 
+    // Build recurrence rule if provided
+    const recurrenceEnabled = req.body.recurrenceEnabled === "true";
+    let recurrence: object | undefined;
+    let recurrenceTemplate = false;
+    if (recurrenceEnabled) {
+      const isNthWeekday = req.body.recurrenceMonthlyType === "nth-weekday";
+      recurrence = {
+        enabled: true,
+        frequency: req.body.recurrenceFrequency,
+        dayOfWeek: isNthWeekday
+          ? (req.body.recurrenceNthDayOfWeek !== undefined ? Number(req.body.recurrenceNthDayOfWeek) : undefined)
+          : (req.body.recurrenceDayOfWeek !== undefined ? Number(req.body.recurrenceDayOfWeek) : undefined),
+        monthlyType: req.body.recurrenceMonthlyType || "day-of-month",
+        dayOfMonth: req.body.recurrenceDayOfMonth !== undefined ? Number(req.body.recurrenceDayOfMonth) : undefined,
+        nth: req.body.recurrenceNth !== undefined ? Number(req.body.recurrenceNth) : undefined,
+        time: req.body.recurrenceTime,
+        timezone: req.body.recurrenceTimezone,
+        durationMinutes: Number(req.body.recurrenceDurationMinutes),
+      };
+      recurrenceTemplate = true;
+    }
+
     const event = new Event({
       id: eventID,
       type: "public", // This is for backwards compatibility
@@ -151,6 +174,9 @@ router.post(
       usersCanComment: eventData.interactionBoolean ? true : false,
       maxAttendees: eventData.maxAttendees,
       firstLoad: true,
+      recurrence,
+      recurrenceTemplate,
+      recurrenceId: recurrenceTemplate ? eventID : undefined,
       activityPubActor: createActivityPubActor(
         eventID,
         res.locals.config?.general.domain,
@@ -189,6 +215,11 @@ router.post(
     });
     try {
       await event.save();
+      if (recurrenceTemplate) {
+        generateRecurringEvents().catch((err) =>
+          console.error("Recurrence generation failed after event create:", err),
+        );
+      }
       addToLog("createEvent", "success", "Event " + eventID + "created");
       // Send email with edit link
       if (eventData.creatorEmail) {

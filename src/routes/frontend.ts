@@ -212,6 +212,8 @@ router.get("/new", (_: Request, res: Response) => {
   return res.render("newevent", {
     title: i18next.t("frontend.newevent"),
     ...frontendConfig(res),
+    timezones: TIMEZONES,
+    defaultTimezone: "America/Los_Angeles",
   });
 });
 
@@ -240,6 +242,8 @@ router.get("/new/:magicLinkToken", async (req: Request, res: Response) => {
     ...frontendConfig(res),
     magicLinkToken: req.params.magicLinkToken,
     creatorEmail: magicLink.email,
+    timezones: TIMEZONES,
+    defaultTimezone: "America/Los_Angeles",
   });
 });
 

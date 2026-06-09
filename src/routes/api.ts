@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import Event from "../models/Event.js";
 import EventGroup from "../models/EventGroup.js";
 import { checkAuth } from "../lib/middleware.js";
+import { generateRecurringEvents } from "../lib/recurrence.js";
 
 const router = Router();
 
@@ -59,6 +60,21 @@ router.get(
     });
 
     res.json(sanitized);
+  },
+);
+
+// POST /api/recurrence/generate — manually trigger recurring event generation
+router.post(
+  "/api/recurrence/generate",
+  checkAuth,
+  async (_req: Request, res: Response): Promise<void> => {
+    try {
+      await generateRecurringEvents();
+      const count = await Event.countDocuments({ start: { $gte: new Date() } });
+      res.json({ success: true, upcomingEvents: count });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
   },
 );
 

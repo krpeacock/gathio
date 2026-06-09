@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import type { IRecurrenceRule } from "./EventGroup.js";
+
+export type { IRecurrenceRule };
 
 export interface IAttendee {
   name: string;
@@ -76,6 +79,9 @@ export interface IEvent extends mongoose.Document {
   activityPubMessages?: IActivityPubMessage[];
   showOnPublicList?: boolean;
   approveRegistrations?: boolean; // Per-event: hide location until attendee approved
+  recurrence?: IRecurrenceRule;
+  recurrenceTemplate?: boolean;
+  recurrenceId?: string;
 }
 
 export const getApprovedAttendeeCount = (
@@ -360,6 +366,25 @@ const EventSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  recurrence: {
+    type: new mongoose.Schema(
+      {
+        enabled: { type: Boolean, required: true, default: false },
+        frequency: { type: String, enum: ["weekly", "biweekly", "monthly"], required: true },
+        dayOfWeek: { type: Number, min: 0, max: 6 },
+        monthlyType: { type: String, enum: ["day-of-month", "nth-weekday"] },
+        dayOfMonth: { type: Number, min: 1, max: 31 },
+        nth: { type: Number },
+        time: { type: String, required: true },
+        timezone: { type: String, required: true },
+        durationMinutes: { type: Number, required: true },
+      },
+      { _id: false },
+    ),
+    required: false,
+  },
+  recurrenceTemplate: { type: Boolean, default: false },
+  recurrenceId: { type: String, trim: true },
 });
 
 export default mongoose.model<IEvent>("Event", EventSchema);

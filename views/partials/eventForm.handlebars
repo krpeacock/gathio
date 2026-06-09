@@ -166,6 +166,93 @@
   </div>
 </div>
 <div class="form-group">
+  <label>Repeating schedule</label>
+  <div class="form-check mb-2">
+    <input class="form-check-input" type="checkbox" id="recurrenceEnabled" name="recurrenceEnabled" x-model="data.recurrenceEnabled">
+    <label class="form-check-label" for="recurrenceEnabled">This event repeats</label>
+  </div>
+  <div x-show="data.recurrenceEnabled" x-cloak>
+    <p class="text-muted small">The date and time above are the first occurrence. Future instances will be generated automatically.</p>
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label for="recurrenceFrequency">Frequency</label>
+        <select class="form-control" id="recurrenceFrequency" name="recurrenceFrequency" x-model="data.recurrenceFrequency">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every two weeks</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4" x-show="data.recurrenceFrequency === 'weekly' || data.recurrenceFrequency === 'biweekly'">
+        <label for="recurrenceDayOfWeek">Day of week</label>
+        <select class="form-control" id="recurrenceDayOfWeek" name="recurrenceDayOfWeek" x-model="data.recurrenceDayOfWeek">
+          <option value="0">Sunday</option>
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4" x-show="data.recurrenceFrequency === 'monthly'">
+        <label for="recurrenceMonthlyType">Repeats on</label>
+        <select class="form-control" id="recurrenceMonthlyType" name="recurrenceMonthlyType" x-model="data.recurrenceMonthlyType">
+          <option value="day-of-month">A specific date (e.g. the 15th)</option>
+          <option value="nth-weekday">A day of the week (e.g. first Tuesday)</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4" x-show="data.recurrenceFrequency === 'monthly' && data.recurrenceMonthlyType === 'day-of-month'">
+        <label for="recurrenceDayOfMonth">Day of month</label>
+        <input type="number" class="form-control" id="recurrenceDayOfMonth" name="recurrenceDayOfMonth" min="1" max="31" x-model="data.recurrenceDayOfMonth">
+      </div>
+      <template x-if="data.recurrenceFrequency === 'monthly' && data.recurrenceMonthlyType === 'nth-weekday'">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="recurrenceNth">Which occurrence</label>
+            <select class="form-control" id="recurrenceNth" name="recurrenceNth" x-model="data.recurrenceNth">
+              <option value="1">First</option>
+              <option value="2">Second</option>
+              <option value="3">Third</option>
+              <option value="4">Fourth</option>
+              <option value="-1">Last</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="recurrenceNthDayOfWeek">Day of week</label>
+            <select class="form-control" id="recurrenceNthDayOfWeek" name="recurrenceNthDayOfWeek" x-model="data.recurrenceNthDayOfWeek">
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label for="recurrenceTime">Start time</label>
+        <input type="time" class="form-control" id="recurrenceTime" name="recurrenceTime" x-model="data.recurrenceTime">
+      </div>
+      <div class="form-group col-md-4">
+        <label for="recurrenceDurationMinutes">Duration (minutes)</label>
+        <input type="number" class="form-control" id="recurrenceDurationMinutes" name="recurrenceDurationMinutes" min="1" x-model="data.recurrenceDurationMinutes">
+      </div>
+      <div class="form-group col-md-4">
+        <label for="recurrenceTimezone">Timezone</label>
+        <select class="form-control" id="recurrenceTimezone" name="recurrenceTimezone">
+          {{#each timezones}}
+            <option value="{{this}}"{{#if (eq this ../defaultTimezone)}} selected{{/if}}>{{this}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="form-group">
   <div class="col-12">
     <div
       class="alert alert-danger"

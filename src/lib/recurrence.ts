@@ -95,12 +95,11 @@ export function computeOccurrences(
  * any occurrences in the next LOOKAHEAD_DAYS that don't already exist.
  */
 export async function generateRecurringEvents(): Promise<void> {
-  const groups = await EventGroup.find({ "recurrence.enabled": true }).populate(
-    "events",
-  );
-
   const now = moment();
   const until = now.clone().add(LOOKAHEAD_DAYS, "days");
+
+  // --- Group-level recurrence (legacy) ---
+  const groups = await EventGroup.find({ "recurrence.enabled": true }).populate("events");
 
   for (const group of groups) {
     const rule = group.recurrence;
@@ -108,7 +107,6 @@ export async function generateRecurringEvents(): Promise<void> {
 
     const occurrences = computeOccurrences(rule, now, until);
 
-    // Fetch existing events in this group so we can skip already-created ones
     const existingEvents = await Event.find({
       eventGroup: group._id,
       start: { $gte: now.toDate(), $lt: until.toDate() },
@@ -151,6 +149,63 @@ export async function generateRecurringEvents(): Promise<void> {
       await EventGroup.findByIdAndUpdate(group._id, {
         $push: { events: event._id },
       });
+    }
+  }
+
+  // --- Event-level recurrence (new) ---
+  const templates = await Event.find({ recurrenceTemplate: true });
+
+  for (const template of templates) {
+    const rule = template.recurrence;
+    if (!rule?.enabled) continue;
+
+    const occurrences = computeOccurrences(rule, now, until);
+
+    const existingInstances = await Event.find({
+      recurrenceId: template.id,
+      start: { $gte: now.toDate(), $lt: until.toDate() },
+    }).select("start");
+
+    const existingStarts = new Set(
+      existingInstances.map((e) => moment(e.start).tz(rule.timezone).toISOString()),
+    );
+    // The template event IS the first occurrence — never duplicate it
+    existingStarts.add(moment(template.start).tz(rule.timezone).toISOString());
+
+    for (const start of occurrences) {
+      if (existingStarts.has(start.toISOString())) continue;
+
+      const end = start.clone().add(rule.durationMinutes, "minutes");
+      const eventID = generateEventID();
+      const editToken = generateEditToken();
+
+      const instance = new Event({
+        id: eventID,
+        type: template.type,
+        name: template.name,
+        location: template.location,
+        start: start.toDate(),
+        end: end.toDate(),
+        timezone: rule.timezone,
+        description: template.description,
+        image: template.image,
+        url: template.url,
+        creatorEmail: template.creatorEmail,
+        hostName: template.hostName,
+        editToken,
+        eventGroup: template.eventGroup,
+        usersCanAttend: template.usersCanAttend,
+        showUsersList: template.showUsersList,
+        usersCanComment: template.usersCanComment,
+        showOnPublicList: template.showOnPublicList,
+        approveRegistrations: template.approveRegistrations,
+        maxAttendees: template.maxAttendees,
+        firstLoad: false,
+        recurrenceTemplate: false,
+        recurrenceId: template.id,
+      });
+
+      await instance.save();
     }
   }
 }
