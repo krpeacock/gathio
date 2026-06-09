@@ -8,6 +8,7 @@ import EventGroup from "../models/EventGroup.js";
 import { marked } from "marked";
 import { renderPlain } from "../util/markdown.js";
 import { checkAuth, getConfigMiddleware } from "../lib/middleware.js";
+import { generateRecurringEvents } from "../lib/recurrence.js";
 
 const storage = multer.memoryStorage();
 // Accept only JPEG, GIF or PNG images, up to 10MB
@@ -102,6 +103,12 @@ router.post(
       });
 
       await eventGroup.save();
+
+      if (recurrence?.enabled) {
+        generateRecurringEvents().catch((err) =>
+          console.error("Recurrence generation failed after group create:", err),
+        );
+      }
 
       addToLog(
         "createEventGroup",
@@ -247,6 +254,12 @@ router.put(
         { id: req.params.eventGroupID },
         updatedEventGroup,
       );
+
+      if (updatedRecurrence?.enabled) {
+        generateRecurringEvents().catch((err) =>
+          console.error("Recurrence generation failed after group update:", err),
+        );
+      }
 
       addToLog(
         "editEventGroup",
