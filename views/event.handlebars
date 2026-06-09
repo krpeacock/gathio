@@ -54,6 +54,37 @@
             {{#if eventHasBegun}}{{#unless eventHasConcluded}}{{t "views.event.started"}} {{else}}{{t "views.event.ended"}} {{/unless}}{{/if}}{{fromNow}}
           </span>
         </li>
+        {{#if recurrenceSummary}}
+          <li id="recurrenceSummary">
+            <span class="fa-li">
+              <i class="fas fa-fw fa-redo"></i>
+            </span>
+            {{recurrenceSummary}}
+          </li>
+        {{/if}}
+        {{#if isRecurrenceTemplate}}
+          <li id="upcomingOccurrences">
+            <span class="fa-li">
+              <i class="fas fa-fw fa-calendar-week"></i>
+            </span>
+            {{#if upcomingOccurrences.length}}
+              <span class="text-muted">Upcoming dates:</span>
+              <ul class="mb-0">
+                {{#each upcomingOccurrences}}
+                  <li><a href="/{{id}}">{{displayDate}}</a></li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <span class="text-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                No upcoming occurrences have been generated for this series yet.
+                {{#if editingEnabled}}
+                  This usually clears up within 24 hours. If it persists, the recurrence rule may be invalid.
+                {{/if}}
+              </span>
+            {{/if}}
+          </li>
+        {{/if}}
         {{#if eventHasHost}}
           <li id="hosted-by">
             <span class="fa-li">
