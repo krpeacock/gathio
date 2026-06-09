@@ -181,9 +181,9 @@ export async function generateRecurringEvents(): Promise<void> {
 
       const instance = new Event({
         id: eventID,
-        type: template.type,
+        type: "public",
         name: template.name,
-        location: template.location,
+        location: template.location ?? "",
         start: start.toDate(),
         end: end.toDate(),
         timezone: rule.timezone,
