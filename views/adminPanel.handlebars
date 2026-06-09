@@ -18,6 +18,12 @@
   </div>
 
   <script>
+    // Persist admin session so future visits don't require a new magic link
+    (function() {
+      const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      setAdminSession('{{adminToken}}', '{{adminEmail}}', expiry);
+    })();
+
     document.getElementById('goToEvent').addEventListener('click', function () {
       var adminToken = this.dataset.adminToken;
       var adminEmail = this.dataset.adminEmail;

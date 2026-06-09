@@ -577,6 +577,23 @@ window.eventData = {{{ json jsonData }}};
     const eventID = $('#eventName').attr('data-event-id');
     const url = new URL(window.location.href);
     const urlParams = new URLSearchParams(window.location.search);
+    {{#unless editingEnabled}}
+    // Admin session: if URL has adminToken but edit mode wasn't granted, the token expired
+    if (urlParams.has('adminToken')) {
+      clearAdminSession();
+      url.searchParams.delete('adminToken');
+      url.searchParams.delete('adminEmail');
+      history.replaceState(history.state, '', url.href);
+    } else {
+      const adminSession = getAdminSession();
+      if (adminSession) {
+        url.searchParams.set('adminToken', adminSession.token);
+        url.searchParams.set('adminEmail', adminSession.email);
+        window.location = url.href;
+      }
+    }
+    {{/unless}}
+
     if (urlParams.has('e')) {
       $.ajax({
         type: "POST",

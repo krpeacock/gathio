@@ -1,3 +1,12 @@
+<script>
+  (function() {
+    const session = getAdminSession();
+    if (session) {
+      window.location.href = '/admin/' + encodeURIComponent(session.token);
+    }
+  })();
+</script>
+
 <main class="page">
   <h2 class="mb-4">Admin login</h2>
 

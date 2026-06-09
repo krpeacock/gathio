@@ -33,6 +33,32 @@ const removeStoredToken = function (eventID) {
     }
 };
 
+const getAdminSession = function() {
+    try {
+        const session = JSON.parse(localStorage.getItem("adminSession"));
+        if (!session || !session.token || !session.email) return null;
+        if (session.expiry && new Date(session.expiry) < new Date()) {
+            localStorage.removeItem("adminSession");
+            return null;
+        }
+        return session;
+    } catch (e) {
+        return null;
+    }
+};
+
+const setAdminSession = function(token, email, expiry) {
+    try {
+        localStorage.setItem("adminSession", JSON.stringify({ token, email, expiry }));
+    } catch (e) {}
+};
+
+const clearAdminSession = function() {
+    try {
+        localStorage.removeItem("adminSession");
+    } catch (e) {}
+};
+
 const unexpectedError = [
     { message: "An unexpected error has occurred. Please try again later." },
 ];
