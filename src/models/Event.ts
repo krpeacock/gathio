@@ -82,6 +82,10 @@ export interface IEvent extends mongoose.Document {
   recurrence?: IRecurrenceRule;
   recurrenceTemplate?: boolean;
   recurrenceId?: string;
+  // Stable identity for a single occurrence within a recurring series. Combined
+  // with `recurrenceId` via a unique compound index to make occurrence
+  // generation idempotent under concurrent and repeated runs.
+  occurrenceKey?: string;
   recurrenceExcludedDates?: Date[];
 }
 
@@ -383,6 +387,7 @@ const EventSchema = new mongoose.Schema({
         time: { type: String, required: true },
         timezone: { type: String, required: true },
         durationMinutes: { type: Number, required: true },
+        anchorDate: { type: Date },
       },
       { _id: false },
     ),
@@ -390,7 +395,26 @@ const EventSchema = new mongoose.Schema({
   },
   recurrenceTemplate: { type: Boolean, default: false },
   recurrenceId: { type: String, trim: true },
+  occurrenceKey: { type: String, trim: true },
   recurrenceExcludedDates: [{ type: Date }],
 });
+
+// Unique compound index that makes occurrence generation idempotent: any
+// number of concurrent or repeated `generateRecurringEvents` runs collapse to
+// a single document per (recurrenceId, occurrenceKey). Uses a partial filter
+// (rather than `sparse: true`) so documents with only one of the two fields
+// set — e.g. legacy recurring events with `recurrenceId` but no
+// `occurrenceKey` — are excluded from the constraint until they're
+// backfilled. Backfill happens lazily on the next generation run.
+EventSchema.index(
+  { recurrenceId: 1, occurrenceKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      recurrenceId: { $exists: true, $type: "string" },
+      occurrenceKey: { $exists: true, $type: "string" },
+    },
+  },
+);
 
 export default mongoose.model<IEvent>("Event", EventSchema);

@@ -21,6 +21,10 @@ export interface IRecurrenceRule {
   time: string; // 'HH:MM' in the group's timezone
   timezone: string; // IANA tz string e.g. 'America/Los_Angeles'
   durationMinutes: number;
+  // Canonical first occurrence — all subsequent occurrences are arithmetic offsets
+  // from this anchor. Stored as UTC. Makes biweekly/monthly stepping independent
+  // of when generation runs.
+  anchorDate?: Date;
 }
 
 export interface IEventGroup extends mongoose.Document {
@@ -113,6 +117,7 @@ const EventGroupSchema = new mongoose.Schema({
         time: { type: String, required: true },
         timezone: { type: String, required: true },
         durationMinutes: { type: Number, required: true },
+        anchorDate: { type: Date },
       },
       { _id: false },
     ),
