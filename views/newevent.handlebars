@@ -74,3 +74,27 @@
 <script src="/js/generate-timezones.js"></script>
 <script src="/js/modules/new.js"></script>
 <script src="/js/modules/group-linker.js"></script>
+<script>
+  (function() {
+    {{#unless adminMagicLinkToken}}
+    // If there's a stored admin session but no admin token in the page, redirect with it
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('adminToken')) {
+      const adminSession = getAdminSession();
+      if (adminSession) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('adminToken', adminSession.token);
+        url.searchParams.set('adminEmail', adminSession.email);
+        window.location = url.href;
+      }
+    } else {
+      // adminToken was in URL but server didn't grant access - session expired
+      clearAdminSession();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('adminToken');
+      url.searchParams.delete('adminEmail');
+      history.replaceState(history.state, '', url.href);
+    }
+    {{/unless}}
+  })();
+</script>

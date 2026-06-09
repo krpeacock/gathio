@@ -99,6 +99,17 @@ export const checkAuth = async (
     return;
   }
 
+  // Admin magic link with editAnyEvent permission bypasses creator auth
+  if (req.body.adminMagicLinkToken && req.body.adminEmail) {
+    const adminLink = await MagicLink.findOne({
+      token: req.body.adminMagicLinkToken,
+      email: req.body.adminEmail,
+      expiryTime: { $gt: new Date() },
+      permittedActions: "editAnyEvent",
+    });
+    if (adminLink) return next();
+  }
+
   // Fall back to magic link validation
   if (!hasMagicLinks) {
     return res.status(401).json({

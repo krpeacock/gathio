@@ -7,6 +7,8 @@
 
 <form id="icsImportForm" enctype="multipart/form-data" x-data="importEventForm()" @submit.prevent="submitForm">
   <input type="hidden" name="magicLinkToken" value="{{magicLinkToken}}" x-ref="magicLinkToken">
+  <input type="hidden" name="adminMagicLinkToken" value="{{adminMagicLinkToken}}" x-ref="adminMagicLinkToken">
+  <input type="hidden" name="adminEmail" value="{{adminEmail}}" x-ref="adminEmail">
   <div class="form-group">
     <div class="custom-file" id="icsImportContainer">
     <input required name="icsImportControl" type="file" class="custom-file-input" id="icsImportControl" aria-describedby="fileHelp" accept="text/calendar" x-ref="icsImportControl"/>

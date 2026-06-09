@@ -206,8 +206,30 @@ router.get("/about", (_: Request, res: Response) => {
   });
 });
 
-router.get("/new", (_: Request, res: Response) => {
+router.get("/new", async (req: Request, res: Response) => {
   if (res.locals.config?.general.creator_email_addresses?.length) {
+    // Allow admins to bypass the creator magic link gate
+    const adminToken = req.query.adminToken as string | undefined;
+    const adminEmail = req.query.adminEmail as string | undefined;
+    if (adminToken && adminEmail) {
+      const adminLink = await MagicLink.findOne({
+        token: adminToken,
+        email: adminEmail,
+        expiryTime: { $gt: new Date() },
+        permittedActions: "editAnyEvent",
+      });
+      if (adminLink) {
+        return res.render("newevent", {
+          title: i18next.t("frontend.newevent"),
+          ...frontendConfig(res),
+          timezones: TIMEZONES,
+          defaultTimezone: "America/Los_Angeles",
+          adminMagicLinkToken: adminToken,
+          adminEmail,
+          creatorEmail: adminEmail,
+        });
+      }
+    }
     return res.render("createEventMagicLink", frontendConfig(res));
   }
   return res.render("newevent", {
