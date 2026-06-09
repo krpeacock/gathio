@@ -37,6 +37,7 @@ export interface IEventGroup extends mongoose.Document {
   subscribers?: ISubscriber[];
   showOnPublicList?: boolean;
   recurrence?: IRecurrenceRule;
+  excludedDates?: Date[];
 }
 
 const Subscriber = new mongoose.Schema({
@@ -95,6 +96,7 @@ const EventGroupSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  excludedDates: [{ type: Date }],
   recurrence: {
     type: new mongoose.Schema(
       {

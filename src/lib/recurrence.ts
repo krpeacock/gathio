@@ -2,7 +2,7 @@ import moment from "moment-timezone";
 import EventGroup from "../models/EventGroup.js";
 import Event from "../models/Event.js";
 import { generateEditToken, generateEventID } from "../util/generator.js";
-import type { IRecurrenceRule } from "../models/EventGroup.js";
+import type { IEventGroup, IRecurrenceRule } from "../models/EventGroup.js";
 
 const LOOKAHEAD_DAYS = 90;
 
