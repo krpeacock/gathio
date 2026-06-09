@@ -141,8 +141,7 @@ router.post(
         return res.status(400).json({
           errors: [
             {
-              message:
-                "Recurrence start time is required (HH:MM format).",
+              message: "Recurrence start time is required (HH:MM format).",
               field: "recurrenceTime",
             },
           ],
