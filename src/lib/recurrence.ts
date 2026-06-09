@@ -66,7 +66,8 @@ export function computeOccurrences(
         if (cursor.date() === 1) {
           const resolved = nthWeekdayOfMonth(cursor.year(), cursor.month(), rule.dayOfWeek ?? 0, rule.nth ?? 1);
           if (resolved) {
-            candidate = resolved.clone().hour(hours).minute(minutes).second(0).millisecond(0);
+            // Convert to rule timezone before setting time so 18:00 means 18:00 local, not 18:00 UTC
+            candidate = resolved.clone().tz(rule.timezone).hour(hours).minute(minutes).second(0).millisecond(0);
           }
         }
       }

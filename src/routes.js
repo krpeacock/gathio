@@ -242,14 +242,16 @@ router.post("/deleteevent/:eventID/:editToken", async (req, res) => {
       }
 
       // broadcast a Delete profile message to all followers so that at least Mastodon servers will delete their local profile information
-      const jsonUpdateObject = JSON.parse(event.activityPubActor);
+      const jsonUpdateObject = event.activityPubActor ? JSON.parse(event.activityPubActor) : null;
 
       try {
-        await broadcastDeleteMessage(
-          jsonUpdateObject,
-          event.followers,
-          req.params.eventID,
-        );
+        if (jsonUpdateObject) {
+          await broadcastDeleteMessage(
+            jsonUpdateObject,
+            event.followers,
+            req.params.eventID,
+          );
+        }
 
         await Event.deleteOne({ id: req.params.eventID });
         // Delete image
