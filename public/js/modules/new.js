@@ -106,13 +106,41 @@ function newEventForm() {
     async submitForm() {
       this.submitting = true;
       this.errors = [];
+
+      // Read recurrenceTimezone directly from the DOM select since it has no x-model
+      const recTz = document.getElementById("recurrenceTimezone");
+      const recTzValue = recTz ? recTz.value : "";
+
+      // Pre-submit validation of recurrence fields so the user sees what's
+      // wrong instead of waiting on a generic server error.
+      if (this.data.recurrenceEnabled) {
+        const recErrors = validateRecurrenceFields({
+          recurrenceFrequency: this.data.recurrenceFrequency,
+          recurrenceDayOfWeek: this.data.recurrenceDayOfWeek,
+          recurrenceMonthlyType: this.data.recurrenceMonthlyType,
+          recurrenceDayOfMonth: this.data.recurrenceDayOfMonth,
+          recurrenceNth: this.data.recurrenceNth,
+          recurrenceNthDayOfWeek: this.data.recurrenceNthDayOfWeek,
+          recurrenceTime: this.data.recurrenceTime,
+          recurrenceTimezone: recTzValue,
+          recurrenceDurationMinutes: this.data.recurrenceDurationMinutes,
+        });
+        if (recErrors.length > 0) {
+          this.errors = recErrors;
+          this.submitting = false;
+          $("input, textarea, select").removeClass("is-invalid");
+          recErrors.forEach((error) => {
+            if (error.field) $(`#${error.field}`).addClass("is-invalid");
+          });
+          return;
+        }
+      }
+
       const formData = new FormData();
       for (const [key, value] of Object.entries(this.data)) {
         formData.append(key, value);
       }
-      // Read recurrenceTimezone directly from the DOM select since it has no x-model
-      const recTz = document.getElementById("recurrenceTimezone");
-      if (recTz) formData.set("recurrenceTimezone", recTz.value);
+      if (recTz) formData.set("recurrenceTimezone", recTzValue);
       formData.append("imageUpload", this.$refs.eventImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
       formData.append(
@@ -127,15 +155,12 @@ function newEventForm() {
         });
         this.submitting = false;
         if (!response.ok) {
-          if (response.status !== 400) {
-            this.errors = unexpectedError;
-            return;
-          }
-          const json = await response.json();
-          this.errors = json.errors;
-          $("input, textarea").removeClass("is-invalid");
+          // Try to surface the server's error message regardless of status
+          // code; falling back to the generic message swallows useful detail.
+          this.errors = await extractErrors(response);
+          $("input, textarea, select").removeClass("is-invalid");
           this.errors.forEach((error) => {
-            $(`#${error.field}`).addClass("is-invalid");
+            if (error.field) $(`#${error.field}`).addClass("is-invalid");
           });
           return;
         }
@@ -143,7 +168,11 @@ function newEventForm() {
         window.location.assign(json.url);
       } catch (error) {
         console.log(error);
-        this.errors = unexpectedError;
+        this.errors = [
+          {
+            message: `Could not reach the server: ${error.message || error}`,
+          },
+        ];
         this.submitting = false;
       }
     },
@@ -178,13 +207,35 @@ function newEventGroupForm() {
     async submitForm() {
       this.submitting = true;
       this.errors = [];
+      const recTz = document.getElementById("recurrenceTimezone");
+      const recTzValue = recTz ? recTz.value : "";
+      if (this.data.recurrenceEnabled) {
+        const recErrors = validateRecurrenceFields({
+          recurrenceFrequency: this.data.recurrenceFrequency,
+          recurrenceDayOfWeek: this.data.recurrenceDayOfWeek,
+          recurrenceMonthlyType: this.data.recurrenceMonthlyType,
+          recurrenceDayOfMonth: this.data.recurrenceDayOfMonth,
+          recurrenceNth: this.data.recurrenceNth,
+          recurrenceNthDayOfWeek: this.data.recurrenceNthDayOfWeek,
+          recurrenceTime: this.data.recurrenceTime,
+          recurrenceTimezone: recTzValue,
+          recurrenceDurationMinutes: this.data.recurrenceDurationMinutes,
+        });
+        if (recErrors.length > 0) {
+          this.errors = recErrors;
+          this.submitting = false;
+          $("input, textarea, select").removeClass("is-invalid");
+          recErrors.forEach((error) => {
+            if (error.field) $(`#${error.field}`).addClass("is-invalid");
+          });
+          return;
+        }
+      }
       const formData = new FormData();
       for (const [key, value] of Object.entries(this.data)) {
         formData.append(key, value);
       }
-      // Read recurrenceTimezone directly from the DOM select since it has no x-model
-      const recTz = document.getElementById("recurrenceTimezone");
-      if (recTz) formData.set("recurrenceTimezone", recTz.value);
+      if (recTz) formData.set("recurrenceTimezone", recTzValue);
       formData.append("imageUpload", this.$refs.eventGroupImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
       formData.append(
@@ -199,15 +250,10 @@ function newEventGroupForm() {
         });
         this.submitting = false;
         if (!response.ok) {
-          if (response.status !== 400) {
-            this.errors = unexpectedError;
-            return;
-          }
-          const json = await response.json();
-          this.errors = json.errors;
-          $("input, textarea").removeClass("is-invalid");
+          this.errors = await extractErrors(response);
+          $("input, textarea, select").removeClass("is-invalid");
           this.errors.forEach((error) => {
-            $(`#${error.field}`).addClass("is-invalid");
+            if (error.field) $(`#${error.field}`).addClass("is-invalid");
           });
           return;
         }
@@ -215,7 +261,11 @@ function newEventGroupForm() {
         window.location.assign(json.url);
       } catch (error) {
         console.log(error);
-        this.errors = unexpectedError;
+        this.errors = [
+          {
+            message: `Could not reach the server: ${error.message || error}`,
+          },
+        ];
         this.submitting = false;
       }
     },
