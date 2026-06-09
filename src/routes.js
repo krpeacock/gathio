@@ -55,7 +55,19 @@ schedule.scheduleJob("59 23 * * *", async function (_fireDate) {
   );
 
   try {
-    const oldEvents = await Event.find({ end: { $lte: too_old } });
+    // Active recurrence templates are the seed of their series: their
+    // start/end is the *first* occurrence, so they age out naturally even
+    // while the series is still generating future instances. Deleting the
+    // template kills the whole series, so keep it as long as recurrence is
+    // enabled. Templates whose recurrence was turned off age out like any
+    // other event.
+    const oldEvents = await Event.find({
+      end: { $lte: too_old },
+      $or: [
+        { recurrenceTemplate: { $ne: true } },
+        { "recurrence.enabled": { $ne: true } },
+      ],
+    });
     oldEvents.forEach(async (event) => {
       const deleteEventFromDB = async (id) => {
         try {

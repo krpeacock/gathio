@@ -80,20 +80,53 @@ function newEventForm() {
       this.data.publicCheckbox = false;
       this.data.approveRegistrationsCheckbox = false;
 
-      // Auto-populate recurrenceTime from eventStart when recurrence is enabled
+      // Auto-populate recurrence fields from eventStart when recurrence is
+      // enabled, and keep them in sync while the start changes. The server
+      // rejects rules whose day fields contradict the event's start date
+      // (the start IS the first occurrence), so the form must propose
+      // matching values rather than fixed defaults like "first Friday".
       this.$watch("data.recurrenceEnabled", (enabled) => {
         if (enabled) {
-          if (!this.data.recurrenceTime && this.data.eventStart) {
-            this.data.recurrenceTime = this.data.eventStart.substring(11, 16);
+          // Default the recurrence timezone to the event's timezone so the
+          // server-side day alignment check compares apples to apples. Only
+          // on enable — re-syncing on every start edit would clobber a
+          // deliberate user choice.
+          const recTz = document.getElementById("recurrenceTimezone");
+          if (recTz && this.data.timezone) {
+            recTz.value = this.data.timezone;
+          }
+          if (this.data.eventStart) {
+            this.syncRecurrenceFromStart();
           }
         }
       });
-      // Keep recurrenceTime in sync when the event start time changes
       this.$watch("data.eventStart", () => {
         if (this.data.recurrenceEnabled && this.data.eventStart) {
-          this.data.recurrenceTime = this.data.eventStart.substring(11, 16);
+          this.syncRecurrenceFromStart();
         }
       });
+    },
+    syncRecurrenceFromStart() {
+      // eventStart is a datetime-local string (YYYY-MM-DDTHH:mm) expressing
+      // wall-clock time in the event's timezone. Parse the parts directly so
+      // the browser's local timezone can't shift the calendar day.
+      const parts = this.data.eventStart.substring(0, 10).split("-");
+      const startDay = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2]),
+      );
+      const dayOfWeek = String(startDay.getDay());
+      const dayOfMonth = startDay.getDate();
+      // Which occurrence of this weekday within the month (1st–4th, or
+      // "last" for days beyond the 28th).
+      const nth = Math.ceil(dayOfMonth / 7);
+
+      this.data.recurrenceTime = this.data.eventStart.substring(11, 16);
+      this.data.recurrenceDayOfWeek = dayOfWeek;
+      this.data.recurrenceNthDayOfWeek = dayOfWeek;
+      this.data.recurrenceDayOfMonth = String(dayOfMonth);
+      this.data.recurrenceNth = nth > 4 ? "-1" : String(nth);
     },
     updateEventEnd() {
       if (

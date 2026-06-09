@@ -8,7 +8,7 @@ import {
   generateRSAKeypair,
   hashString,
 } from "../util/generator.js";
-import { validateEventData } from "../util/validation.js";
+import { validateEventData, parseRecurrenceRule } from "../util/validation.js";
 import { addToLog } from "../helpers.js";
 import Event, { getApprovedAttendeeCount } from "../models/Event.js";
 import MagicLink from "../models/MagicLink.js";
@@ -130,56 +130,24 @@ router.post(
     // generate RSA keypair for ActivityPub
     const { publicKey, privateKey } = generateRSAKeypair();
 
-    // Build recurrence rule if provided
+    // Build recurrence rule if provided. parseRecurrenceRule strictly types
+    // and range-checks every field, and — because the template event's start
+    // is the canonical first occurrence — verifies the rule's day fields
+    // actually match the start date, rejecting contradictions like "starts
+    // Tuesday, repeats Fridays" instead of storing them.
     const recurrenceEnabled = req.body.recurrenceEnabled === "true";
     let recurrence: object | undefined;
     let recurrenceTemplate = false;
     if (recurrenceEnabled) {
-      const recTime = req.body.recurrenceTime as string | undefined;
-      const recTz = req.body.recurrenceTimezone as string | undefined;
-      if (!recTime || !/^\d{2}:\d{2}$/.test(recTime)) {
-        return res.status(400).json({
-          errors: [
-            {
-              message: "Recurrence start time is required (HH:MM format).",
-              field: "recurrenceTime",
-            },
-          ],
-        });
+      const { rule, errors: recurrenceErrors } = parseRecurrenceRule(
+        req.body,
+        startUTC,
+      );
+      if (recurrenceErrors.length > 0 || !rule) {
+        return res.status(400).json({ errors: recurrenceErrors });
       }
-      if (!recTz || !moment.tz.zone(recTz)) {
-        return res.status(400).json({
-          errors: [
-            {
-              message: "A valid timezone is required for recurrence.",
-              field: "recurrenceTimezone",
-            },
-          ],
-        });
-      }
-      const isNthWeekday = req.body.recurrenceMonthlyType === "nth-weekday";
       recurrence = {
-        enabled: true,
-        frequency: req.body.recurrenceFrequency,
-        dayOfWeek: isNthWeekday
-          ? req.body.recurrenceNthDayOfWeek !== undefined
-            ? Number(req.body.recurrenceNthDayOfWeek)
-            : undefined
-          : req.body.recurrenceDayOfWeek !== undefined
-            ? Number(req.body.recurrenceDayOfWeek)
-            : undefined,
-        monthlyType: req.body.recurrenceMonthlyType || "day-of-month",
-        dayOfMonth:
-          req.body.recurrenceDayOfMonth !== undefined
-            ? Number(req.body.recurrenceDayOfMonth)
-            : undefined,
-        nth:
-          req.body.recurrenceNth !== undefined
-            ? Number(req.body.recurrenceNth)
-            : undefined,
-        time: req.body.recurrenceTime,
-        timezone: req.body.recurrenceTimezone,
-        durationMinutes: Number(req.body.recurrenceDurationMinutes),
+        ...rule,
         // The template event's start IS the canonical first occurrence.
         // Pinning it here means subsequent stepping is fully deterministic.
         anchorDate: startUTC.toDate(),
