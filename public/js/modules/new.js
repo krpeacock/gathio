@@ -97,7 +97,10 @@ function newEventForm() {
       }
       formData.append("imageUpload", this.$refs.eventImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
-      formData.append("adminMagicLinkToken", this.$refs.adminMagicLinkToken.value);
+      formData.append(
+        "adminMagicLinkToken",
+        this.$refs.adminMagicLinkToken.value,
+      );
       formData.append("adminEmail", this.$refs.adminEmail.value);
       try {
         const response = await fetch("/event", {
@@ -153,7 +156,10 @@ function newEventGroupForm() {
       }
       formData.append("imageUpload", this.$refs.eventGroupImageUpload.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
-      formData.append("adminMagicLinkToken", this.$refs.adminMagicLinkToken.value);
+      formData.append(
+        "adminMagicLinkToken",
+        this.$refs.adminMagicLinkToken.value,
+      );
       formData.append("adminEmail", this.$refs.adminEmail.value);
       try {
         const response = await fetch("/group", {
@@ -201,7 +207,10 @@ function importEventForm() {
       }
       formData.append("icsImportControl", this.$refs.icsImportControl.files[0]);
       formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
-      formData.append("adminMagicLinkToken", this.$refs.adminMagicLinkToken.value);
+      formData.append(
+        "adminMagicLinkToken",
+        this.$refs.adminMagicLinkToken.value,
+      );
       formData.append("adminEmail", this.$refs.adminEmail.value);
       try {
         const response = await fetch("/import/event", {

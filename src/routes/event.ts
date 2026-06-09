@@ -140,11 +140,21 @@ router.post(
         enabled: true,
         frequency: req.body.recurrenceFrequency,
         dayOfWeek: isNthWeekday
-          ? (req.body.recurrenceNthDayOfWeek !== undefined ? Number(req.body.recurrenceNthDayOfWeek) : undefined)
-          : (req.body.recurrenceDayOfWeek !== undefined ? Number(req.body.recurrenceDayOfWeek) : undefined),
+          ? req.body.recurrenceNthDayOfWeek !== undefined
+            ? Number(req.body.recurrenceNthDayOfWeek)
+            : undefined
+          : req.body.recurrenceDayOfWeek !== undefined
+            ? Number(req.body.recurrenceDayOfWeek)
+            : undefined,
         monthlyType: req.body.recurrenceMonthlyType || "day-of-month",
-        dayOfMonth: req.body.recurrenceDayOfMonth !== undefined ? Number(req.body.recurrenceDayOfMonth) : undefined,
-        nth: req.body.recurrenceNth !== undefined ? Number(req.body.recurrenceNth) : undefined,
+        dayOfMonth:
+          req.body.recurrenceDayOfMonth !== undefined
+            ? Number(req.body.recurrenceDayOfMonth)
+            : undefined,
+        nth:
+          req.body.recurrenceNth !== undefined
+            ? Number(req.body.recurrenceNth)
+            : undefined,
         time: req.body.recurrenceTime,
         timezone: req.body.recurrenceTimezone,
         durationMinutes: Number(req.body.recurrenceDurationMinutes),
@@ -218,7 +228,10 @@ router.post(
       await event.save();
       if (recurrenceTemplate) {
         generateRecurringEvents().catch((err) =>
-          console.error("Recurrence generation failed after event create:", err),
+          console.error(
+            "Recurrence generation failed after event create:",
+            err,
+          ),
         );
       }
       addToLog("createEvent", "success", "Event " + eventID + "created");

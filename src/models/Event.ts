@@ -82,6 +82,7 @@ export interface IEvent extends mongoose.Document {
   recurrence?: IRecurrenceRule;
   recurrenceTemplate?: boolean;
   recurrenceId?: string;
+  recurrenceExcludedDates?: Date[];
 }
 
 export const getApprovedAttendeeCount = (
@@ -370,7 +371,11 @@ const EventSchema = new mongoose.Schema({
     type: new mongoose.Schema(
       {
         enabled: { type: Boolean, required: true, default: false },
-        frequency: { type: String, enum: ["weekly", "biweekly", "monthly"], required: true },
+        frequency: {
+          type: String,
+          enum: ["weekly", "biweekly", "monthly"],
+          required: true,
+        },
         dayOfWeek: { type: Number, min: 0, max: 6 },
         monthlyType: { type: String, enum: ["day-of-month", "nth-weekday"] },
         dayOfMonth: { type: Number, min: 1, max: 31 },
@@ -385,6 +390,7 @@ const EventSchema = new mongoose.Schema({
   },
   recurrenceTemplate: { type: Boolean, default: false },
   recurrenceId: { type: String, trim: true },
+  recurrenceExcludedDates: [{ type: Date }],
 });
 
 export default mongoose.model<IEvent>("Event", EventSchema);

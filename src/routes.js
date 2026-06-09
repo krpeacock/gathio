@@ -249,13 +249,29 @@ router.post("/deleteevent/:eventID/:editToken", async (req, res) => {
     if (event.editToken === submittedEditToken) {
       // Token matches
 
+      // Record this occurrence as excluded so the generator won't recreate it
+      if (event.recurrenceId) {
+        // Event-level template instance: record on the template
+        await Event.findOneAndUpdate(
+          { id: event.recurrenceId },
+          { $addToSet: { recurrenceExcludedDates: event.start } },
+        );
+      } else if (event.eventGroup) {
+        // Group-level instance: record on the group
+        await EventGroup.findByIdAndUpdate(event.eventGroup, {
+          $addToSet: { excludedDates: event.start },
+        });
+      }
+
       let eventImage;
       if (event.image) {
         eventImage = event.image;
       }
 
       // broadcast a Delete profile message to all followers so that at least Mastodon servers will delete their local profile information
-      const jsonUpdateObject = event.activityPubActor ? JSON.parse(event.activityPubActor) : null;
+      const jsonUpdateObject = event.activityPubActor
+        ? JSON.parse(event.activityPubActor)
+        : null;
 
       try {
         if (jsonUpdateObject) {

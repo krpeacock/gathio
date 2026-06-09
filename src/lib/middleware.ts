@@ -58,7 +58,11 @@ const hashKey = (key: string) =>
  * Checks for a valid API key in the Authorization: Bearer header.
  * Returns true and calls next() if valid; returns false otherwise (does not call next).
  */
-const tryApiKey = (req: Request, res: Response, next: NextFunction): boolean => {
+const tryApiKey = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): boolean => {
   const config = getConfig();
   if (!config.api_keys?.length) return false;
 
@@ -113,15 +117,24 @@ export const checkAuth = async (
   // Fall back to magic link validation
   if (!hasMagicLinks) {
     return res.status(401).json({
-      errors: [{ message: "Authentication required. Provide an API key via Authorization: Bearer header." }],
+      errors: [
+        {
+          message:
+            "Authentication required. Provide an API key via Authorization: Bearer header.",
+        },
+      ],
     });
   }
 
   if (!req.body.magicLinkToken) {
-    return res.status(400).json({ errors: [{ message: "No magic link token was provided." }] });
+    return res
+      .status(400)
+      .json({ errors: [{ message: "No magic link token was provided." }] });
   }
   if (!req.body.creatorEmail) {
-    return res.status(400).json({ errors: [{ message: "No creator email was provided." }] });
+    return res
+      .status(400)
+      .json({ errors: [{ message: "No creator email was provided." }] });
   }
   const magicLink = await MagicLink.findOne({
     token: req.body.magicLinkToken,
@@ -131,7 +144,12 @@ export const checkAuth = async (
   });
   if (!magicLink || magicLink.email !== req.body.creatorEmail) {
     return res.status(400).json({
-      errors: [{ message: "Magic link is invalid or has expired. Get a new one <a href='/new'>here</a>." }],
+      errors: [
+        {
+          message:
+            "Magic link is invalid or has expired. Get a new one <a href='/new'>here</a>.",
+        },
+      ],
     });
   }
   next();
