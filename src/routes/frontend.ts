@@ -862,6 +862,31 @@ router.get("/:eventID", async (req: Request, res: Response) => {
         { firstLoad: false },
       );
     }
+
+    // If this is a recurring-series template, surface the rule + upcoming
+    // generated instances on the page so the host can confirm recurrence is
+    // actually producing events. Without this, a host who set up recurrence
+    // had no UI signal that anything was happening.
+    const recurrenceSummary = buildRecurrenceSummary(event.recurrence);
+    let upcomingOccurrences: Array<{ id: string; displayDate: string }> = [];
+    if (event.recurrenceTemplate && event.id) {
+      const now = new Date();
+      const instances = await Event.find({
+        recurrenceId: event.id,
+        recurrenceTemplate: { $ne: true },
+        start: { $gte: now },
+      })
+        .select("id start timezone")
+        .sort("start")
+        .limit(10)
+        .lean();
+      upcomingOccurrences = instances.map((inst) => ({
+        id: inst.id,
+        displayDate: moment
+          .tz(inst.start, inst.timezone || event.timezone)
+          .format("LLLL"),
+      }));
+    }
     // Check admin magic link credentials
     const adminToken = req.query.adminToken as string | undefined;
     const adminEmail = req.query.adminEmail as string | undefined;
@@ -1069,6 +1094,9 @@ router.get("/:eventID", async (req: Request, res: Response) => {
           .tz(event.end, event.timezone)
           .add(res.locals.config?.general.delete_after_days, "days")
           .fromNow(),
+        recurrenceSummary,
+        upcomingOccurrences,
+        isRecurrenceTemplate: !!event.recurrenceTemplate,
         metadata: metadata,
         jsonData: {
           name: event.name,
