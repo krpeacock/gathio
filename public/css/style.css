@@ -860,8 +860,13 @@ article.static-page header {
   --text-muted: hsl(0, 0%, 62%);
   --border: rgba(245, 245, 245, 0.14);
   --border-strong: rgba(245, 245, 245, 0.28);
+  /* Lavender — the signature link / primary accent */
   --accent: hsl(273, 60%, 72%);
   --accent-hover: hsl(273, 60%, 82%);
+  --accent-glow: hsla(273, 55%, 50%, 0.16);
+  /* Trans pride pair — decorative accents (wordmark, selection) */
+  --accent-blue: #5bcefa;
+  --accent-pink: #f5a9b8;
 
   /* Inverted grey ramp: light "surfaces" become dark, dark "text"
      greys become light, so var-based rules need no further edits. */
@@ -881,11 +886,12 @@ article.static-page header {
   --color--black: #f5f5f5;
   --color-black: #f5f5f5;
 
-  /* Purple accent retuned to read on a dark canvas */
-  --color-purple: hsl(273, 55%, 68%);
-  --color-purple-dark: hsl(273, 55%, 78%);
-  --color-purple-lighter: hsla(273, 55%, 68%, 0.5);
-  --color-purple-light: hsla(273, 55%, 50%, 0.16);
+  /* Map the legacy purple tokens onto the lavender accent so existing
+     var(--color-purple*) rules keep the signature link color. */
+  --color-purple: var(--accent);
+  --color-purple-dark: var(--accent-hover);
+  --color-purple-lighter: hsla(273, 55%, 72%, 0.5);
+  --color-purple-light: var(--accent-glow);
 }
 
 /* Typography ------------------------------------------------- */
@@ -914,6 +920,11 @@ a {
 }
 a:hover {
   color: var(--accent-hover);
+}
+
+::selection {
+  background: var(--accent-pink);
+  color: var(--bg);
 }
 
 .code {
@@ -946,7 +957,17 @@ a:hover {
   letter-spacing: 0;
 }
 #sidebar h1 a {
-  background: var(--text);
+  background: linear-gradient(to right, var(--accent-blue), var(--accent-pink));
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+#sidebar h1 a:hover {
+  background: linear-gradient(
+    to right,
+    var(--accent-blue),
+    var(--text),
+    var(--accent-pink)
+  );
   background-clip: text;
   -webkit-background-clip: text;
 }
