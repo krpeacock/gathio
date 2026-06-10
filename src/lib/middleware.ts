@@ -55,7 +55,9 @@ const hashKey = (key: string) =>
   crypto.createHash("sha256").update(key).digest("hex");
 
 /**
- * Checks for a valid API key in the Authorization: Bearer header.
+ * Checks for a valid API key in the Authorization: Bearer header or the
+ * X-API-Key header. The latter is useful when a reverse proxy (e.g. Synology
+ * DSM) intercepts the Authorization header before it reaches the app.
  * Returns true and calls next() if valid; returns false otherwise (does not call next).
  */
 const tryApiKey = (
@@ -66,10 +68,17 @@ const tryApiKey = (
   const config = getConfig();
   if (!config.api_keys?.length) return false;
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) return false;
+  let provided: string | undefined;
 
-  const provided = authHeader.slice(7);
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    provided = authHeader.slice(7);
+  } else if (req.headers["x-api-key"]) {
+    provided = req.headers["x-api-key"] as string;
+  }
+
+  if (!provided) return false;
+
   const hashed = hashKey(provided);
   const match = config.api_keys.find((k) => k.hashed_key === hashed);
   if (!match) {
@@ -82,8 +91,8 @@ const tryApiKey = (
 };
 
 /**
- * Auth middleware that accepts either a valid API key (Authorization: Bearer)
- * or a valid magic link token in the request body.
+ * Auth middleware that accepts either a valid API key (Authorization: Bearer
+ * or X-API-Key) or a valid magic link token in the request body.
  * Falls through to no-auth if neither creator_email_addresses nor api_keys are configured.
  */
 export const checkAuth = async (
@@ -97,10 +106,11 @@ export const checkAuth = async (
 
   if (!hasApiKeys && !hasMagicLinks) return next();
 
-  // API key takes priority if the header is present
-  if (req.headers.authorization) {
-    tryApiKey(req, res, next);
-    return;
+  // API key takes priority if either auth header is present
+  if (req.headers.authorization || req.headers["x-api-key"]) {
+    const handled = tryApiKey(req, res, next);
+    if (handled) return;
+    // No API keys configured — fall through to magic link check
   }
 
   // Admin magic link with editAnyEvent permission bypasses creator auth
@@ -120,7 +130,7 @@ export const checkAuth = async (
       errors: [
         {
           message:
-            "Authentication required. Provide an API key via Authorization: Bearer header.",
+            "Authentication required. Provide an API key via Authorization: Bearer or X-API-Key header.",
         },
       ],
     });
