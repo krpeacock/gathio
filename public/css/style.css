@@ -902,8 +902,14 @@ body {
   color-scheme: dark;
 }
 
-h1, h2, h3, h4,
-.h1, .h2, .h3, .h4 {
+h1,
+h2,
+h3,
+h4,
+.h1,
+.h2,
+.h3,
+.h4 {
   font-family: "Oswald", "Inter", sans-serif;
   font-weight: 700;
   text-transform: uppercase;
@@ -940,7 +946,9 @@ a:hover {
 @media (min-width: 768px) {
   #container > #content {
     border-radius: 0;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 40px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03),
+      0 10px 40px rgba(0, 0, 0, 0.5);
   }
 }
 
