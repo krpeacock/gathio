@@ -139,7 +139,7 @@
   
   <aside id="event__actions">
       <div class="button-stack" role="group" aria-label="Event actions">
-        <a href="http://www.google.com/calendar/event?action=TEMPLATE&dates={{parsedStart}}%2F{{parsedEnd}}&text={{escapedName}}&location={{calendarLocationParam}}&ctz={{timezone}}" class="button button--outline-secondary button--sm">
+        <a href="http://www.google.com/calendar/event?action=TEMPLATE&dates={{parsedStart}}%2F{{parsedEnd}}&text={{escapedName}}&location={{calendarLocationParam}}&ctz={{timezone}}{{#if recurrenceGCal}}&recur={{recurrenceGCal}}{{/if}}" class="button button--outline-secondary button--sm">
           <i class="far fa-calendar-plus"></i> {{t "views.event.addtoGC" }}
         </a>
         <button type="button" id="exportICS" class="button button--outline-secondary button--sm" data-event-id="{{eventData.id}}">

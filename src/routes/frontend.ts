@@ -7,7 +7,12 @@ import {
   instanceDescription,
   instanceRules,
 } from "../lib/config.js";
-import { addToLog, exportIcal, type ICalEvent } from "../helpers.js";
+import {
+  addToLog,
+  exportIcal,
+  recurrenceToRRule,
+  type ICalEvent,
+} from "../helpers.js";
 import Event, { getApprovedAttendeeCount } from "../models/Event.js";
 import EventGroup, {
   type IEventGroup,
@@ -842,6 +847,15 @@ router.get("/:eventID", async (req: Request, res: Response) => {
 
     const escapedName = encodeURIComponent(event.name);
 
+    // For a recurring-series template, hand the Google Calendar link an
+    // RRULE so it creates a single repeating event rather than a one-off.
+    const recurrenceRRule = event.recurrenceTemplate
+      ? recurrenceToRRule(event.recurrence)
+      : null;
+    const recurrenceGCal = recurrenceRRule
+      ? encodeURIComponent(`RRULE:${recurrenceRRule}`)
+      : null;
+
     let eventHasCoverImage = false;
     if (event.image) {
       eventHasCoverImage = true;
@@ -1098,6 +1112,7 @@ router.get("/:eventID", async (req: Request, res: Response) => {
         recurrenceSummary,
         upcomingOccurrences,
         isRecurrenceTemplate: !!event.recurrenceTemplate,
+        recurrenceGCal,
         metadata: metadata,
         jsonData: {
           name: event.name,
@@ -1337,7 +1352,9 @@ router.get("/export/event/:eventID", async (req: Request, res: Response) => {
             ...evObj,
             location: i18next.t("views.event.location_hidden"),
           };
-      const string = exportIcal([sanitizedEvent], event.name);
+      const string = exportIcal([sanitizedEvent], event.name, {
+        expandRecurringTemplates: true,
+      });
       res.set("Content-Type", "text/calendar").send(string);
     }
   } catch (err) {
