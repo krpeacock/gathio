@@ -5,6 +5,7 @@ import { validateGroupData, parseRecurrenceRule } from "../util/validation.js";
 import Jimp from "jimp";
 import { addToLog } from "../helpers.js";
 import EventGroup from "../models/EventGroup.js";
+import MagicLink from "../models/MagicLink.js";
 import { marked } from "marked";
 import { renderPlain } from "../util/markdown.js";
 import { checkAuth, getConfigMiddleware } from "../lib/middleware.js";
@@ -183,8 +184,21 @@ router.put(
         });
       }
 
-      if (eventGroup.editToken !== submittedEditToken) {
-        // Token doesn't match
+      // Check admin magic link credentials before falling back to editToken
+      let authorized = eventGroup.editToken === submittedEditToken;
+      if (!authorized && req.body.adminMagicLinkToken && req.body.adminEmail) {
+        const adminLink = await MagicLink.findOne({
+          token: req.body.adminMagicLinkToken,
+          email: req.body.adminEmail,
+          expiryTime: { $gt: new Date() },
+          permittedActions: "editAnyEvent",
+        });
+        if (adminLink) {
+          authorized = true;
+        }
+      }
+
+      if (!authorized) {
         addToLog(
           "editEventGroup",
           "error",
@@ -198,7 +212,7 @@ router.put(
           ],
         });
       }
-      // Token matches
+      // Authorized
       // If there is a new image, upload that first
       const eventGroupID = req.params.eventGroupID;
       let eventGroupImageFilename = eventGroup.image;

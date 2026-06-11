@@ -5,16 +5,16 @@
     Authenticated as admin: <strong>{{adminEmail}}</strong>. This session expires in 24 hours.
   </div>
 
-  <p>Enter an event ID or full event URL to open it in admin editing mode.</p>
+  <p>Enter an event or event group ID or full URL to open it in admin editing mode.</p>
 
   <div class="form-group">
-    <label for="eventInput">Event ID or URL</label>
-    <input type="text" class="form-control" id="eventInput" placeholder="e.g. abc123 or https://{{domain}}/abc123">
+    <label for="eventInput">Event or event group ID or URL</label>
+    <input type="text" class="form-control" id="eventInput" placeholder="e.g. abc123, https://{{domain}}/abc123 or https://{{domain}}/group/abc123">
   </div>
   <div class="form-group text-center">
     <button id="goToEvent" class="button button--primary w-50"
       data-admin-token="{{adminToken}}"
-      data-admin-email="{{adminEmail}}">Edit event</button>
+      data-admin-email="{{adminEmail}}">Edit</button>
   </div>
 
   <script>
@@ -29,9 +29,14 @@
       var adminEmail = this.dataset.adminEmail;
       var input = document.getElementById('eventInput').value.trim();
       if (!input) return;
-      var eventID = input.replace(/^https?:\/\/[^\/]+\//, '').replace(/^\//, '').split('?')[0];
-      if (!eventID) return;
-      window.location.href = '/' + eventID
+      // Strip any leading scheme/host and leading slash, drop query string
+      var path = input.replace(/^https?:\/\/[^\/]+\//, '').replace(/^\//, '').split('?')[0];
+      if (!path) return;
+      // A "group/<id>" path (or full group URL) targets the event group route;
+      // anything else is treated as a bare event ID.
+      var groupMatch = path.match(/^group\/(.+)$/);
+      var targetPath = groupMatch ? 'group/' + groupMatch[1] : path;
+      window.location.href = '/' + targetPath
         + '?adminToken=' + encodeURIComponent(adminToken)
         + '&adminEmail=' + encodeURIComponent(adminEmail);
     });
