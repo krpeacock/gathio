@@ -36,6 +36,7 @@ function editEventGroupForm() {
       hostName: window.groupData.hostName,
       creatorEmail: window.groupData.creatorEmail,
       publicCheckbox: window.groupData.showOnPublicList,
+      groupColorIndex: window.groupData.colorIndex || "",
       recurrenceEnabled: !!rec.enabled,
       recurrenceFrequency: rec.frequency || "weekly",
       recurrenceDayOfWeek:

@@ -1275,6 +1275,7 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
         image: eventGroup.image,
         editToken: editingEnabled ? eventGroupEditToken : null,
         showOnPublicList: eventGroup.showOnPublicList,
+        colorIndex: eventGroup.colorIndex,
         recurrence: eventGroup.recurrence,
       },
       recurrenceSummary: buildRecurrenceSummary(eventGroup.recurrence),
