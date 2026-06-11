@@ -11,7 +11,11 @@
                 {{#if this.location}}<span class="ml-2 text-muted"><i class="fas fa-map-marker-alt"></i> {{this.location}}</span>{{/if}}
                 <span class="ml-2 text-muted">{{this.displayDate}}</span>
                 {{#if this.eventGroup}}
+                {{#if this.eventGroup.colorIndex}}
+                <span class="badge group-color-badge group-color-badge-{{this.eventGroup.colorIndex}} ml-2">{{this.eventGroup.name}}</span>
+                {{else}}
                 <span class="badge badge-secondary ml-2">{{this.eventGroup.name}}</span>
+                {{/if}}
                 {{/if}}
             </a>
         {{/each}}

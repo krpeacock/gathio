@@ -93,6 +93,7 @@ router.post(
         editToken: editToken,
         firstLoad: true,
         showOnPublicList: groupData.publicBoolean,
+        colorIndex: groupData.colorIndex,
         recurrence,
       });
 
@@ -258,9 +259,13 @@ router.put(
         recurrence: updatedRecurrence,
       };
 
+      // A selected colour is stored; clearing it ($unset) returns the group's
+      // events to the default label so "no colour" is a reachable state.
       await EventGroup.findOneAndUpdate(
         { id: req.params.eventGroupID },
-        updatedEventGroup,
+        groupData.colorIndex
+          ? { ...updatedEventGroup, colorIndex: groupData.colorIndex }
+          : { ...updatedEventGroup, $unset: { colorIndex: "" } },
       );
 
       if (ruleMoved || (!updatedRecurrence && previousRule?.enabled)) {

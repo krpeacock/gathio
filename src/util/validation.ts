@@ -64,6 +64,7 @@ interface EventGroupData {
   hostName: string;
   creatorEmail: string;
   publicCheckbox: string;
+  groupColorIndex?: string;
   recurrenceEnabled?: string;
   recurrenceFrequency?: string;
   recurrenceDayOfWeek?: string;
@@ -78,10 +79,11 @@ interface EventGroupData {
 
 export type ValidatedEventGroupData = Omit<
   EventGroupData,
-  "publicCheckbox" | "recurrenceEnabled"
+  "publicCheckbox" | "recurrenceEnabled" | "groupColorIndex"
 > & {
   publicBoolean: boolean;
   recurrenceEnabled: boolean;
+  colorIndex?: number;
 };
 
 const validateEmail = (email: string) => {
@@ -472,6 +474,26 @@ export const validateGroupData = (
     }
   }
 
+  // Group label colour: an optional index from 1–8 selecting one of the
+  // predefined label colours. Anything outside that range is rejected so an
+  // invalid value can't end up styling the label.
+  let colorIndex: number | undefined;
+  if (
+    groupData.groupColorIndex !== undefined &&
+    groupData.groupColorIndex !== "" &&
+    groupData.groupColorIndex !== "undefined"
+  ) {
+    const parsed = Number(groupData.groupColorIndex);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 8) {
+      errors.push({
+        message: i18next.t("util.validation.groupdata.groupcolor"),
+        field: "groupColorIndex",
+      });
+    } else {
+      colorIndex = parsed;
+    }
+  }
+
   // Recurrence fields are validated by parseRecurrenceRule in the route,
   // which produces the typed rule directly — validating here too would
   // duplicate every error.
@@ -481,6 +503,7 @@ export const validateGroupData = (
     ...groupData,
     publicBoolean: groupData.publicCheckbox === "true",
     recurrenceEnabled,
+    colorIndex,
   };
 
   return {

@@ -6,9 +6,10 @@
   font-stretch: 100%;
   font-display: swap;
   src: url("/fonts/fredoka-v14.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
-    U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
 
 body {
@@ -55,6 +56,16 @@ h3 {
   --color--black: hsl(0, 0%, 10%);
   --color-orange: #ff8c26;
   --transition: 0.15s ease-in;
+  /* Group label colours — used to make a group's events visually distinct
+     in event lists. Kept in sync with the 8 swatches in the group form. */
+  --group-color-1: hsl(273, 44%, 58%);
+  --group-color-2: hsl(210, 70%, 52%);
+  --group-color-3: hsl(180, 50%, 40%);
+  --group-color-4: hsl(145, 55%, 40%);
+  --group-color-5: hsl(45, 90%, 45%);
+  --group-color-6: hsl(28, 90%, 52%);
+  --group-color-7: hsl(359, 70%, 58%);
+  --group-color-8: hsl(330, 65%, 56%);
 }
 
 .flex-gap {
@@ -1273,4 +1284,104 @@ small.form-text {
 .group-preview__text,
 .group-preview__text strong {
   color: var(--text);
+}
+
+/* Group label colours
+   ------------------------------------------------------------------ */
+
+/* Coloured group badge shown next to events in event lists. */
+.group-color-badge {
+  color: #fff;
+}
+.group-color-badge-1 {
+  background-color: var(--group-color-1);
+}
+.group-color-badge-2 {
+  background-color: var(--group-color-2);
+}
+.group-color-badge-3 {
+  background-color: var(--group-color-3);
+}
+.group-color-badge-4 {
+  background-color: var(--group-color-4);
+}
+.group-color-badge-5 {
+  background-color: var(--group-color-5);
+}
+.group-color-badge-6 {
+  background-color: var(--group-color-6);
+}
+.group-color-badge-7 {
+  background-color: var(--group-color-7);
+}
+.group-color-badge-8 {
+  background-color: var(--group-color-8);
+}
+
+/* Colour picker shown in the group create/edit form. */
+.group-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.group-color-swatch {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-grey-85);
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
+}
+.group-color-swatch:hover {
+  transform: scale(1.1);
+}
+.group-color-swatch:focus {
+  outline: none;
+}
+.group-color-swatch.is-selected {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--color-grey-50);
+  border-color: #fff;
+}
+.group-color-swatch--none {
+  background-color: var(--color-grey-95);
+  position: relative;
+}
+.group-color-swatch--none::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: var(--color-red);
+  transform: rotate(-45deg);
+}
+.group-color-swatch-1 {
+  background-color: var(--group-color-1);
+}
+.group-color-swatch-2 {
+  background-color: var(--group-color-2);
+}
+.group-color-swatch-3 {
+  background-color: var(--group-color-3);
+}
+.group-color-swatch-4 {
+  background-color: var(--group-color-4);
+}
+.group-color-swatch-5 {
+  background-color: var(--group-color-5);
+}
+.group-color-swatch-6 {
+  background-color: var(--group-color-6);
+}
+.group-color-swatch-7 {
+  background-color: var(--group-color-7);
+}
+.group-color-swatch-8 {
+  background-color: var(--group-color-8);
 }

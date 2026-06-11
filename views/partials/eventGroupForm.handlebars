@@ -20,6 +20,31 @@
     <input type="text" class="form-control" id="eventGroupHostName" name="hostName" placeholder="{{t "views.partials.eventgroupform.isshowningroup" }}"  x-model="data.hostName">
 </div>
 <div class="form-group">
+    <label>{{t "views.partials.eventgroupform.groupcolor" }}</label>
+    <div class="group-color-picker" role="radiogroup" aria-label="{{t "views.partials.eventgroupform.groupcolor" }}" id="groupColorIndex">
+        <button
+            type="button"
+            class="group-color-swatch group-color-swatch--none"
+            :class="{ 'is-selected': !data.groupColorIndex }"
+            :aria-checked="!data.groupColorIndex"
+            role="radio"
+            @click="data.groupColorIndex = ''"
+            title="{{t "views.partials.eventgroupform.groupcolornone" }}"
+            aria-label="{{t "views.partials.eventgroupform.groupcolornone" }}"></button>
+        <template x-for="i in 8" :key="i">
+            <button
+                type="button"
+                class="group-color-swatch"
+                :class="['group-color-swatch-' + i, { 'is-selected': Number(data.groupColorIndex) === i }]"
+                :aria-checked="Number(data.groupColorIndex) === i"
+                role="radio"
+                @click="data.groupColorIndex = i"
+                :aria-label="'{{t "views.partials.eventgroupform.groupcolor" }} ' + i"></button>
+        </template>
+    </div>
+    <small class="form-text">{{t "views.partials.eventgroupform.groupcolordesc" }}</small>
+</div>
+<div class="form-group">
     <label for="creatorEmail">{{t "views.partials.eventgroupform.creatoremail" }}</label>
     <div class="form-group">
         <input type="email" class="form-control" id="eventGroupCreatorEmail" name="creatorEmail" placeholder="{{t "views.partials.wontshow" }}" x-model.fill="data.creatorEmail" {{#if creatorEmail}}value="{{creatorEmail}}" readonly{{/if}}>

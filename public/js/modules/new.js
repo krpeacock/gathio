@@ -220,6 +220,7 @@ function newEventGroupForm() {
       hostName: "",
       creatorEmail: "",
       publicCheckbox: false,
+      groupColorIndex: "",
       recurrenceEnabled: false,
       recurrenceFrequency: "weekly",
       recurrenceDayOfWeek: "1",

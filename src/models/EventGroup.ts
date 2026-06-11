@@ -42,6 +42,9 @@ export interface IEventGroup extends mongoose.Document {
   showOnPublicList?: boolean;
   recurrence?: IRecurrenceRule;
   excludedDates?: Date[];
+  // Index (1–8) of the label colour used to make this group's events
+  // visually distinct in event lists. Undefined means the default grey label.
+  colorIndex?: number;
 }
 
 const Subscriber = new mongoose.Schema({
@@ -99,6 +102,11 @@ const EventGroupSchema = new mongoose.Schema({
   showOnPublicList: {
     type: Boolean,
     default: false,
+  },
+  colorIndex: {
+    type: Number,
+    min: 1,
+    max: 8,
   },
   excludedDates: [{ type: Date }],
   recurrence: {
