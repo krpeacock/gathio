@@ -1222,8 +1222,24 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
       );
     }
 
-    let editingEnabled = false;
-    if (Object.keys(req.query).length !== 0) {
+    // Check admin magic link credentials
+    const adminToken = req.query.adminToken as string | undefined;
+    const adminEmail = req.query.adminEmail as string | undefined;
+    let isAdminAccess = false;
+    if (adminToken && adminEmail) {
+      const adminLink = await MagicLink.findOne({
+        token: adminToken,
+        email: adminEmail,
+        expiryTime: { $gt: new Date() },
+        permittedActions: "editAnyEvent",
+      });
+      if (adminLink) {
+        isAdminAccess = true;
+      }
+    }
+
+    let editingEnabled = isAdminAccess;
+    if (!editingEnabled && Object.keys(req.query).length !== 0) {
       if (!req.query.e) {
         editingEnabled = false;
       } else {
@@ -1260,6 +1276,7 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
       pastEvents: pastEventsInMonthBuckets,
       parsedDescription: parsedDescription,
       editingEnabled: editingEnabled,
+      isAdminAccess: isAdminAccess,
       eventGroupHasCoverImage: eventGroupHasCoverImage,
       eventGroupHasHost: eventGroupHasHost,
       firstLoad: firstLoad,
@@ -1273,7 +1290,10 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
         hostName: eventGroup.hostName,
         creatorEmail: eventGroup.creatorEmail,
         image: eventGroup.image,
-        editToken: editingEnabled ? eventGroupEditToken : null,
+        editToken:
+          editingEnabled && !isAdminAccess ? eventGroupEditToken : null,
+        adminMagicLinkToken: isAdminAccess ? adminToken : null,
+        adminEmail: isAdminAccess ? adminEmail : null,
         showOnPublicList: eventGroup.showOnPublicList,
         colorIndex: eventGroup.colorIndex,
         recurrence: eventGroup.recurrence,

@@ -69,7 +69,15 @@ function editEventGroupForm() {
       const recTz = document.getElementById("recurrenceTimezone");
       if (recTz) formData.set("recurrenceTimezone", recTz.value);
       formData.append("imageUpload", this.$refs.eventGroupImageUpload.files[0]);
-      formData.append("editToken", window.groupData.editToken);
+      if (window.groupData.adminMagicLinkToken) {
+        formData.append(
+          "adminMagicLinkToken",
+          window.groupData.adminMagicLinkToken,
+        );
+        formData.append("adminEmail", window.groupData.adminEmail);
+      } else {
+        formData.append("editToken", window.groupData.editToken);
+      }
       try {
         const response = await fetch(`/group/${window.groupData.id}`, {
           method: "PUT",
