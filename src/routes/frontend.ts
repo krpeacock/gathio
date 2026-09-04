@@ -772,10 +772,19 @@ router.get("/events", async (req: Request, res: Response) => {
 
   // Content-negotiate: browsers asking for ActivityPub get the whole public
   // event list as an OrderedCollection of Event objects (scrapeable embeds).
-  if (acceptsActivityPub(req)) {
+  // A ?callback=NAME param additionally wraps that collection in a JSONP
+  // function call, so embedders whose CSP blocks cross-origin fetch() (e.g.
+  // Neocities pages) can load it via a <script> tag instead.
+  const jsonpCallback =
+    typeof req.query.callback === "string" &&
+    /^[A-Za-z_$][A-Za-z0-9_$.]*$/.test(req.query.callback)
+      ? req.query.callback
+      : null;
+  if (acceptsActivityPub(req) || jsonpCallback) {
     const domain = res.locals.config?.general.domain;
     const orderedItems = updatedEvents.map((event, i) => {
       const coverImage = events[i]?.image;
+      const group = event.eventGroup;
       return {
         "@context": "https://www.w3.org/ns/activitystreams",
         type: "Event",
@@ -786,19 +795,31 @@ router.get("/events", async (req: Request, res: Response) => {
         ...(coverImage
           ? { image: `https://${domain}/events/${coverImage}` }
           : {}),
+        ...(group?.id
+          ? {
+              eventGroup: {
+                id: `https://${domain}/group/${group.id}`,
+                name: group.name,
+              },
+            }
+          : {}),
         startTime: event.startMoment.toISOString(),
         endTime: event.endMoment.toISOString(),
       };
     });
-    return res.header("Content-Type", activityPubContentType).send(
-      JSON.stringify({
-        "@context": "https://www.w3.org/ns/activitystreams",
-        type: "OrderedCollection",
-        id: `https://${domain}/events`,
-        totalItems: orderedItems.length,
-        orderedItems,
-      }),
-    );
+    const collection = JSON.stringify({
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "OrderedCollection",
+      id: `https://${domain}/events`,
+      totalItems: orderedItems.length,
+      orderedItems,
+    });
+    if (jsonpCallback) {
+      return res
+        .header("Content-Type", "text/javascript; charset=utf-8")
+        .send(`${jsonpCallback}(${collection});`);
+    }
+    return res.header("Content-Type", activityPubContentType).send(collection);
   }
 
   res.render("publicEventList", {
