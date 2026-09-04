@@ -774,16 +774,22 @@ router.get("/events", async (req: Request, res: Response) => {
   // event list as an OrderedCollection of Event objects (scrapeable embeds).
   if (acceptsActivityPub(req)) {
     const domain = res.locals.config?.general.domain;
-    const orderedItems = updatedEvents.map((event) => ({
-      "@context": "https://www.w3.org/ns/activitystreams",
-      type: "Event",
-      id: `https://${domain}/${event.id}`,
-      url: `https://${domain}/${event.id}`,
-      name: event.name,
-      location: event.location,
-      startTime: event.startMoment.toISOString(),
-      endTime: event.endMoment.toISOString(),
-    }));
+    const orderedItems = updatedEvents.map((event, i) => {
+      const coverImage = events[i]?.image;
+      return {
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "Event",
+        id: `https://${domain}/${event.id}`,
+        url: `https://${domain}/${event.id}`,
+        name: event.name,
+        location: event.location,
+        ...(coverImage
+          ? { image: `https://${domain}/events/${coverImage}` }
+          : {}),
+        startTime: event.startMoment.toISOString(),
+        endTime: event.endMoment.toISOString(),
+      };
+    });
     return res.header("Content-Type", activityPubContentType).send(
       JSON.stringify({
         "@context": "https://www.w3.org/ns/activitystreams",
