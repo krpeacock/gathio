@@ -43,9 +43,7 @@ async function initializeApp() {
   // CORS //
   // Allow embeds (e.g. event lists on Neocities pages) to read public
   // ActivityPub/JSON endpoints cross-origin.
-  const CORS_ALLOW_ORIGINS = [
-    /^https?:\/\/([a-z0-9-]+\.)*neocities\.org$/i,
-  ];
+  const CORS_ALLOW_ORIGINS = [/^https?:\/\/([a-z0-9-]+\.)*neocities\.org$/i];
   app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (

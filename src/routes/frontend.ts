@@ -784,17 +784,15 @@ router.get("/events", async (req: Request, res: Response) => {
       startTime: event.startMoment.toISOString(),
       endTime: event.endMoment.toISOString(),
     }));
-    return res
-      .header("Content-Type", activityPubContentType)
-      .send(
-        JSON.stringify({
-          "@context": "https://www.w3.org/ns/activitystreams",
-          type: "OrderedCollection",
-          id: `https://${domain}/events`,
-          totalItems: orderedItems.length,
-          orderedItems,
-        }),
-      );
+    return res.header("Content-Type", activityPubContentType).send(
+      JSON.stringify({
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "OrderedCollection",
+        id: `https://${domain}/events`,
+        totalItems: orderedItems.length,
+        orderedItems,
+      }),
+    );
   }
 
   res.render("publicEventList", {
