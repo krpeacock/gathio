@@ -64,6 +64,9 @@ function newEventForm() {
     },
     errors: [],
     submitting: false,
+    icsDragActive: false,
+    icsParsing: false,
+    icsEvents: [],
     init() {
       // Set up timezone Select2
       this.select2 = $(this.$refs.timezone).select2();
@@ -135,6 +138,117 @@ function newEventForm() {
       ) {
         this.data.eventEnd = this.data.eventStart;
       }
+    },
+    handleIcsDrop(event) {
+      const files = event.dataTransfer && event.dataTransfer.files;
+      if (files && files.length > 0) this.parseIcsFile(files[0]);
+    },
+    handleIcsFileSelect(event) {
+      const files = event.target.files;
+      if (files && files.length > 0) this.parseIcsFile(files[0]);
+      // Reset so the same file can be picked again
+      event.target.value = "";
+    },
+    async parseIcsFile(file) {
+      this.errors = [];
+      this.icsEvents = [];
+      const isIcs =
+        /\.ics$/i.test(file.name) ||
+        file.type === "text/calendar" ||
+        file.type === "";
+      if (!isIcs) {
+        this.errors = [
+          { message: "Please choose a single .ics calendar file." },
+        ];
+        return;
+      }
+      this.icsParsing = true;
+      try {
+        const formData = new FormData();
+        formData.append("icsFile", file);
+        formData.append("magicLinkToken", this.$refs.magicLinkToken.value);
+        formData.append(
+          "adminMagicLinkToken",
+          this.$refs.adminMagicLinkToken.value,
+        );
+        formData.append("adminEmail", this.$refs.adminEmail.value);
+        const response = await fetch("/import/parse", {
+          method: "POST",
+          body: formData,
+        });
+        this.icsParsing = false;
+        if (!response.ok) {
+          this.errors = await extractErrors(response);
+          return;
+        }
+        const json = await response.json();
+        const events = (json.events || []).filter((e) => e.start);
+        if (events.length === 0) {
+          this.errors = [
+            { message: "No events found in that calendar file." },
+          ];
+          return;
+        }
+        if (events.length === 1) {
+          this.fillFormFromIcs(events[0]);
+        } else {
+          // Let the user pick which event pre-fills the form
+          this.icsEvents = events;
+        }
+      } catch (error) {
+        this.icsParsing = false;
+        this.errors = [
+          {
+            message: `Could not reach the server: ${error.message || error}`,
+          },
+        ];
+      }
+    },
+    formatIcsEventTime(ev) {
+      try {
+        if (ev.timezone && moment.tz.zone(ev.timezone)) {
+          return moment.tz(ev.start, ev.timezone).format("lll z");
+        }
+        return moment(ev.start).format("lll");
+      } catch (e) {
+        return ev.start;
+      }
+    },
+    timezoneOptionExists(tz) {
+      const select = this.$refs.timezone;
+      return (
+        !!select &&
+        Array.from(select.options).some((option) => option.value === tz)
+      );
+    },
+    fillFormFromIcs(ev) {
+      this.icsEvents = [];
+      if (ev.name) this.data.eventName = ev.name;
+      if (ev.location) this.data.eventLocation = ev.location;
+      if (ev.description) this.data.eventDescription = ev.description;
+      if (ev.url) this.data.eventURL = ev.url;
+      if (ev.organizerName) this.data.hostName = ev.organizerName;
+      // Don't clobber an email that's already set (e.g. a readonly admin email)
+      if (ev.organizerEmail && !this.data.creatorEmail) {
+        this.data.creatorEmail = ev.organizerEmail;
+      }
+      if (ev.start) this.data.eventStart = ev.start;
+      if (ev.end) this.data.eventEnd = ev.end;
+      if (ev.timezone && this.timezoneOptionExists(ev.timezone)) {
+        this.data.timezone = ev.timezone;
+        if (this.select2) this.select2.val(ev.timezone).trigger("change");
+      }
+      // Enable recurrence last so the watcher syncs day/time fields from the
+      // eventStart that was just set above.
+      if (ev.recurrenceFrequency) {
+        this.data.recurrenceFrequency = ev.recurrenceFrequency;
+        this.data.recurrenceEnabled = true;
+      }
+      // Grow the description textarea to fit the imported text
+      if (window.autosize) autosize.update($("#eventDescription"));
+      // Bring the filled form into view
+      const form = document.getElementById("newEventForm");
+      if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
     },
     async submitForm() {
       this.submitting = true;

@@ -738,6 +738,154 @@ router.post(
   },
 );
 
+interface ParsedIcsEvent {
+  name: string;
+  location: string;
+  description: string;
+  url: string;
+  organizerName: string;
+  organizerEmail: string;
+  // Wall-clock times in the event's timezone, formatted for datetime-local
+  // inputs (YYYY-MM-DDTHH:mm). Wall-clock is extracted from the raw ICS text
+  // because node-ical interprets TZID times in the server's local timezone.
+  start: string;
+  end: string;
+  timezone: string | null;
+  recurrenceFrequency: "weekly" | "monthly" | null;
+}
+
+/**
+ * Extract the wall-clock start/end and TZID for one VEVENT block from the
+ * raw ICS text. Returns null when the block has no parseable DTSTART.
+ */
+const parseVeventTimes = (
+  block: string,
+): { start: string; end: string; timezone: string | null } | null => {
+  const toLocal = (value: string): string | null => {
+    // Date-only: 20260615 -> midnight. Datetime: 20260615T190000[Z].
+    const m = value.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/);
+    if (!m) return null;
+    return `${m[1]}-${m[2]}-${m[3]}T${m[4] ?? "00"}:${m[5] ?? "00"}`;
+  };
+  const parseLine = (prop: "DTSTART" | "DTEND") => {
+    const line = block
+      .split(/\r?\n/)
+      .find((l) => l.startsWith(prop + ":") || l.startsWith(prop + ";"));
+    if (!line) return null;
+    const value = line.slice(line.indexOf(":") + 1).trim();
+    const tzid = line.match(/TZID=([^:;]+)/)?.[1] ?? null;
+    const local = toLocal(value);
+    if (!local) return null;
+    return {
+      local,
+      timezone: tzid ?? (value.endsWith("Z") ? "Etc/UTC" : null),
+    };
+  };
+  const start = parseLine("DTSTART");
+  if (!start) return null;
+  const end = parseLine("DTEND");
+  return {
+    start: start.local,
+    end: end?.local ?? start.local,
+    timezone: start.timezone,
+  };
+};
+
+/**
+ * Parse an uploaded ICS file and return its events as JSON so the new-event
+ * form can be pre-populated client-side. Unlike /import/event this creates
+ * nothing — the user reviews and submits the form themselves.
+ */
+router.post(
+  "/import/parse",
+  icsUpload.single("icsFile"),
+  checkAuth,
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      return res.status(400).json({
+        errors: [
+          {
+            message: "No file was provided.",
+          },
+        ],
+      });
+    }
+    try {
+      const raw = req.file.buffer.toString("utf8");
+      const iCalObject = ical.parseICS(raw);
+      const veventBlocks = raw.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) ?? [];
+      const events: ParsedIcsEvent[] = [];
+
+      for (const key of Object.keys(iCalObject)) {
+        const comp = iCalObject[key];
+        if (!comp || comp.type !== "VEVENT") continue;
+        const block =
+          veventBlocks.find((b) => comp.uid && b.includes(`UID:${comp.uid}`)) ??
+          "";
+        const times = parseVeventTimes(block);
+        if (!times) continue;
+
+        let organizerName = "";
+        let organizerEmail = "";
+        const organizer = comp.organizer as
+          | string
+          | { val?: string; params?: { CN?: string } }
+          | undefined;
+        if (typeof organizer === "string") {
+          organizerEmail = organizer.replace(/^mailto:/i, "");
+          organizerName = /^mailto:/i.test(organizer)
+            ? ""
+            : organizer.replace(/["]+/g, "");
+        } else if (organizer) {
+          organizerEmail = (organizer.val ?? "").replace(/^mailto:/i, "");
+          organizerName = (organizer.params?.CN ?? "").replace(/["]+/g, "");
+        }
+
+        const rruleFreq = block.match(
+          /FREQ=(WEEKLY|MONTHLY|DAILY|YEARLY)/,
+        )?.[1];
+        events.push({
+          name: comp.summary ?? "",
+          location: comp.location ?? "",
+          description: comp.description ?? "",
+          url: typeof comp.url === "string" ? comp.url : "",
+          organizerName,
+          organizerEmail,
+          start: times.start,
+          end: times.end,
+          timezone: times.timezone,
+          recurrenceFrequency:
+            rruleFreq === "WEEKLY"
+              ? "weekly"
+              : rruleFreq === "MONTHLY"
+                ? "monthly"
+                : null,
+        });
+      }
+
+      if (events.length === 0) {
+        return res.status(400).json({
+          errors: [
+            {
+              message: "No events found in this calendar file.",
+            },
+          ],
+        });
+      }
+      return res.json({ events });
+    } catch (err) {
+      console.error(err);
+      return res.status(400).json({
+        errors: [
+          {
+            message: "Could not parse this calendar file.",
+          },
+        ],
+      });
+    }
+  },
+);
+
 // Remove self from event (attendee action)
 router.delete(
   "/event/attendee/:eventID",

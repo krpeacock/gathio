@@ -29,6 +29,46 @@
     @event-group-id-changed="data.eventGroupID = $event.detail"
     @event-group-edit-token-changed="data.eventGroupEditToken = $event.detail"
   >
+    <div
+      id="icsDropZone"
+      class="ics-dropzone"
+      @dragover.prevent="icsDragActive = true"
+      @dragenter.prevent="icsDragActive = true"
+      @dragleave="icsDragActive = false"
+      @drop.prevent="icsDragActive = false; handleIcsDrop($event)"
+      :class="icsDragActive && 'ics-dropzone--active'"
+    >
+      <i class="fas fa-file-import ics-dropzone__icon"></i>
+      <p class="ics-dropzone__text">{{t "views.newevent.icsdrop.droptext" }}</p>
+      <p class="text-muted mb-0">
+        {{t "views.newevent.icsdrop.or" }}
+        <button type="button" class="btn btn-link p-0 align-baseline" @click="$refs.icsFileInput.click()">{{t "views.newevent.icsdrop.browse" }}</button>
+      </p>
+      <input
+        type="file"
+        x-ref="icsFileInput"
+        accept=".ics,text/calendar"
+        class="d-none"
+        @change="handleIcsFileSelect($event)"
+        aria-label="{{t "views.newevent.icsdrop.browse" }}"
+      />
+      <p class="mb-0 mt-2" x-show="icsParsing">
+        <i class="fas fa-spinner fa-spin"></i> {{t "views.newevent.icsdrop.parsing" }}
+      </p>
+      <div class="ics-picker text-left" x-show="icsEvents.length > 1" x-cloak>
+        <h6 class="mt-3">{{t "views.newevent.icsdrop.picktitle" }}</h6>
+        <ul class="list-unstyled">
+          <template x-for="(ev, idx) in icsEvents" :key="idx">
+            <li class="mb-2">
+              <button type="button" class="button button--outline-primary w-100 text-left" @click="fillFormFromIcs(ev)">
+                <strong x-text="ev.name || '{{t "views.newevent.icsdrop.unnamed" }}'"></strong><br />
+                <small x-text="formatIcsEventTime(ev)"></small>
+              </button>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
     {{>eventForm}}
     <div class="form-group row">
       <div class="col-sm-12 pt-3 pb-3 text-center">
