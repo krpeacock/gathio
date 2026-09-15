@@ -1384,3 +1384,30 @@ small.form-text {
 .group-color-swatch-8 {
   background-color: var(--group-color-8);
 }
+
+/* ICS drag-and-drop prefill zone on the new event form */
+.ics-dropzone {
+  border: 2px dashed var(--color-border, #ced4da);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.ics-dropzone--active {
+  border-color: var(--color-primary, #007bff);
+  background-color: rgba(0, 123, 255, 0.06);
+}
+.ics-dropzone__icon {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+.ics-dropzone__text {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+.ics-picker {
+  max-height: 16rem;
+  overflow-y: auto;
+}
