@@ -55,6 +55,38 @@ const hashKey = (key: string) =>
   crypto.createHash("sha256").update(key).digest("hex");
 
 /**
+ * Finds a valid, unexpired editor session: a magic link with the
+ * "editGranted" action, minted when an edit-token holder signs in with a
+ * passkey. Returns null when the token/email pair is missing or invalid.
+ */
+export const findEditorSession = async (
+  token: string | undefined,
+  email: string | undefined,
+) => {
+  if (!token || !email) return null;
+  return MagicLink.findOne({
+    token,
+    email,
+    expiryTime: { $gt: new Date() },
+    permittedActions: "editGranted",
+  });
+};
+
+/**
+ * Checks whether an editor session's scope covers a given event or group id.
+ */
+export const editorSessionCovers = (
+  session: { scope?: { eventIds?: string[]; groupIds?: string[] } } | null,
+  kind: "event" | "group",
+  id: string,
+): boolean => {
+  if (!session) return false;
+  const ids =
+    kind === "event" ? session.scope?.eventIds : session.scope?.groupIds;
+  return !!ids && ids.includes(id);
+};
+
+/**
  * Checks for a valid API key in the Authorization: Bearer header or the
  * X-API-Key header. The latter is useful when a reverse proxy (e.g. Synology
  * DSM) intercepts the Authorization header before it reaches the app.

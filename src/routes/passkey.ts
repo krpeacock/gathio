@@ -10,6 +10,8 @@ import User from "../models/User.js";
 import Passkey from "../models/Passkey.js";
 import PasskeyChallenge from "../models/PasskeyChallenge.js";
 import MagicLink from "../models/MagicLink.js";
+import Event from "../models/Event.js";
+import EventGroup from "../models/EventGroup.js";
 import { getConfigMiddleware, checkAuth } from "../lib/middleware.js";
 import { getConfig } from "../lib/config.js";
 import { getWebAuthnParams, CHALLENGE_TTL_MS } from "../lib/webauthn.js";
@@ -58,6 +60,42 @@ const mintAdminSession = async (email: string) => {
   });
   await magicLink.save();
   return { token, email, expiry: expiryTime.toISOString() };
+};
+
+// Mint a session for a passkey owner. Admins get the existing 24h admin
+// session; editors get a 24h "editGranted" session scoped to the
+// events/groups recorded in their grants, so they stay signed in without a
+// magic link.
+const mintSessionForUser = async (user: {
+  email: string;
+  grants?: { kind: "event" | "group"; refId: string }[];
+}) => {
+  if (isValidAdminEmail(user.email)) {
+    const session = await mintAdminSession(user.email);
+    return {
+      ...session,
+      grants: [] as { kind: "event" | "group"; refId: string }[],
+    };
+  }
+  const grants = (user.grants || []).map((g) => ({
+    kind: g.kind as "event" | "group",
+    refId: g.refId,
+  }));
+  const scope = {
+    eventIds: grants.filter((g) => g.kind === "event").map((g) => g.refId),
+    groupIds: grants.filter((g) => g.kind === "group").map((g) => g.refId),
+  };
+  const token = randomUUID();
+  const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const magicLink = new MagicLink({
+    email: user.email,
+    token,
+    expiryTime,
+    permittedActions: ["editGranted"],
+    scope,
+  });
+  await magicLink.save();
+  return { token, email: user.email, expiry: expiryTime.toISOString(), grants };
 };
 
 // USER MANAGEMENT
@@ -113,30 +151,84 @@ router.delete(
 
 // PASKEY REGISTRATION
 // -------------------
-// POST /passkey/register/options — generate registration options for an admin.
+// POST /passkey/register/options — generate registration options for an admin
+// or for an editor holding an event/group edit token.
 //
-// Registration is gated behind an active admin session (adminToken + adminEmail)
-// so the first passkey is only ever created by someone who has proven ownership
-// of an admin address via an email magic link. Additional passkeys may be
-// added later from the same session or a passkey-backed session. The resulting
-// challenge is persisted so registration can be verified later.
+// Registration is gated behind either an active admin session (adminToken +
+// adminEmail) so the first passkey is only ever created by someone who has
+// proven ownership of an admin address via an email magic link, or behind a
+// valid edit token for a specific event or group (email + editToken +
+// exactly one of eventId/groupId). When the event/group has a creator email
+// on file, the registering email must match it. Successful editor
+// registration records a grant on the user so passkey sign-in later mints an
+// editor session covering that event/group. The resulting challenge is
+// persisted so registration can be verified later.
 router.post(
   "/passkey/register/options",
   async (req: Request, res: Response) => {
-    const { adminToken, adminEmail } = req.body;
+    const { adminToken, adminEmail, email, editToken, eventId, groupId } =
+      req.body;
     const adminLink = await activeAdminMagicLink(adminToken, adminEmail);
-    if (!adminLink) {
-      return res.status(401).json({
-        error: "Admin authentication required to register a passkey.",
-      });
+    let accountEmail: string;
+    let editorKind: "event" | "group" | null = null;
+    let editorRefId: string | null = null;
+
+    if (adminLink) {
+      accountEmail = String(adminEmail).trim().toLowerCase();
+      if (!isValidAdminEmail(accountEmail)) {
+        return res.status(403).json({
+          error: "This email address is not an admin on this instance.",
+        });
+      }
+    } else {
+      const providedEmail = String(email || "")
+        .trim()
+        .toLowerCase();
+      const providedToken = String(editToken || "");
+      const hasEvent = !!eventId;
+      const hasGroup = !!groupId;
+      if (!providedEmail || !providedToken || hasEvent === hasGroup) {
+        return res.status(400).json({
+          error:
+            "An email address, edit token, and exactly one of eventId or groupId are required.",
+        });
+      }
+      const record = hasEvent
+        ? await Event.findOne({ id: String(eventId) })
+        : await EventGroup.findOne({ id: String(groupId) });
+      if (!record || record.editToken !== providedToken) {
+        return res.status(403).json({
+          error: "The edit token is invalid.",
+        });
+      }
+      const creatorEmail = String(record.creatorEmail || "")
+        .trim()
+        .toLowerCase();
+      if (creatorEmail && creatorEmail !== providedEmail) {
+        return res.status(403).json({
+          error:
+            "This email address does not match the email on file for this event.",
+        });
+      }
+      accountEmail = providedEmail;
+      editorKind = hasEvent ? "event" : "group";
+      editorRefId = String(eventId || groupId);
     }
-    const accountEmail = String(adminEmail).trim().toLowerCase();
-    if (!isValidAdminEmail(accountEmail)) {
-      return res.status(403).json({
-        error: "This email address is not an admin on this instance.",
-      });
-    }
+
     const user = await findOrCreateUser(accountEmail);
+
+    if (editorKind && editorRefId) {
+      const hasGrant = (user.grants || []).some(
+        (g) => g.kind === editorKind && g.refId === editorRefId,
+      );
+      if (!hasGrant) {
+        user.grants = [
+          ...(user.grants || []),
+          { kind: editorKind, refId: editorRefId },
+        ];
+        await user.save();
+      }
+    }
 
     const existing = await Passkey.find({ user: user._id });
     const params = getWebAuthnParams();
@@ -243,8 +335,9 @@ router.post("/passkey/register", async (req: Request, res: Response) => {
   await passkey.save();
 
   // The first registered passkey doubles as the first login: return a fresh
-  // admin session so the user is signed in immediately without an email link.
-  const session = await mintAdminSession(user.email);
+  // session so the user is signed in immediately without an email link.
+  // Admins get an admin session; editors get a scoped editor session.
+  const session = await mintSessionForUser(user);
   return res.json({ success: true, passkeyId: passkey._id, ...session });
 });
 
@@ -307,7 +400,8 @@ async function authOptions(req: Request, res: Response) {
 }
 
 // POST /passkey/challenge/:uuid — validate a completed authentication challenge
-// and, on success, mint a 24h admin session (magic link) for the passkey owner.
+// and, on success, mint a session for the passkey owner: a 24h admin session
+// for admins, or a 24h editor session scoped to the user's grants otherwise.
 router.post("/passkey/challenge/:uuid", async (req: Request, res: Response) => {
   const { response } = req.body;
   const challenge = await PasskeyChallenge.findById(req.params.uuid).populate(
@@ -353,14 +447,19 @@ router.post("/passkey/challenge/:uuid", async (req: Request, res: Response) => {
   await passkey.save();
   await PasskeyChallenge.deleteOne({ _id: challenge._id });
 
-  const email = challenge.email;
-  if (!isValidAdminEmail(email)) {
+  const user = await User.findById(challengeUser._id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found." });
+  }
+
+  if (!isValidAdminEmail(user.email) && !(user.grants || []).length) {
     return res.status(403).json({
-      error: "This passkey is not associated with an admin account.",
+      error:
+        "This passkey is not associated with an account that has edit access.",
     });
   }
 
-  return res.json(await mintAdminSession(email));
+  return res.json(await mintSessionForUser(user));
 });
 
 // DELETE /passkey/challenge/:uuid — expire a pending challenge
