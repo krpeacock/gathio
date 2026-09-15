@@ -59,6 +59,32 @@ const clearAdminSession = function() {
     } catch (e) {}
 };
 
+const getEditorSession = function() {
+    try {
+        const session = JSON.parse(localStorage.getItem("editorSession"));
+        if (!session || !session.token || !session.email) return null;
+        if (session.expiry && new Date(session.expiry) < new Date()) {
+            localStorage.removeItem("editorSession");
+            return null;
+        }
+        return session;
+    } catch (e) {
+        return null;
+    }
+};
+
+const setEditorSession = function(token, email, expiry) {
+    try {
+        localStorage.setItem("editorSession", JSON.stringify({ token, email, expiry }));
+    } catch (e) {}
+};
+
+const clearEditorSession = function() {
+    try {
+        localStorage.removeItem("editorSession");
+    } catch (e) {}
+};
+
 const unexpectedError = [
     { message: "An unexpected error has occurred. Please try again later." },
 ];

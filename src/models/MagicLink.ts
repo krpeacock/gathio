@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export type MagicLinkAction = "createEvent" | "editAnyEvent";
+export type MagicLinkAction = "createEvent" | "editAnyEvent" | "editGranted";
 
 export interface MagicLink {
   id: string;
@@ -8,6 +8,10 @@ export interface MagicLink {
   token: string;
   expiryTime: Date;
   permittedActions: MagicLinkAction[];
+  scope: {
+    eventIds: string[];
+    groupIds: string[];
+  };
 }
 
 const MagicLinkSchema = new mongoose.Schema({
@@ -29,6 +33,19 @@ const MagicLinkSchema = new mongoose.Schema({
   permittedActions: {
     type: [String],
     required: true,
+  },
+  // Scopes an "editGranted" session to specific events/groups. Empty arrays
+  // (the default) mean the link covers nothing; older documents without a
+  // scope field behave the same way.
+  scope: {
+    eventIds: {
+      type: [String],
+      default: [],
+    },
+    groupIds: {
+      type: [String],
+      default: [],
+    },
   },
 });
 

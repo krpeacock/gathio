@@ -24,7 +24,11 @@ import {
   activityPubContentType,
 } from "../lib/activitypub.js";
 import MagicLink from "../models/MagicLink.js";
-import { getConfigMiddleware } from "../lib/middleware.js";
+import {
+  getConfigMiddleware,
+  findEditorSession,
+  editorSessionCovers,
+} from "../lib/middleware.js";
 import { getMessage } from "../util/messages.js";
 
 const TIMEZONES = moment.tz
@@ -975,12 +979,26 @@ router.get("/:eventID", async (req: Request, res: Response) => {
       viewerRegistered,
       viewerRegisteredUnapproved,
       viewerAttendeeId,
-      editingEnabled,
+      editingEnabled: tokenEditingEnabled,
     } = resolveLocationAccess(
       event,
       req.query as Record<string, string | string[] | undefined>,
       isAdminAccess,
     );
+
+    // A passkey-backed editor session (editGranted) grants the same editing UI
+    // as the edit-token link. isAdminAccess stays false so the template
+    // receives the real event editToken, exactly like the ?e= flow.
+    let editingEnabled = tokenEditingEnabled;
+    if (!editingEnabled && !isAdminAccess) {
+      const editorSession = await findEditorSession(
+        req.query.editorToken as string | undefined,
+        req.query.editorEmail as string | undefined,
+      );
+      if (editorSessionCovers(editorSession, "event", event.id)) {
+        editingEnabled = true;
+      }
+    }
     const approveRegistrations = !!event.approveRegistrations;
     const parsedLocation = viewerApprovedForLocation
       ? parsedLocationOriginal
@@ -1296,6 +1314,19 @@ router.get("/group/:eventGroupID", async (req: Request, res: Response) => {
         editingEnabled = false;
       } else {
         editingEnabled = req.query.e === eventGroupEditToken;
+      }
+    }
+
+    // A passkey-backed editor session (editGranted) grants the same editing UI
+    // as the edit-token link. isAdminAccess stays false so the template
+    // receives the real group editToken, exactly like the ?e= flow.
+    if (!editingEnabled && !isAdminAccess) {
+      const editorSession = await findEditorSession(
+        req.query.editorToken as string | undefined,
+        req.query.editorEmail as string | undefined,
+      );
+      if (editorSessionCovers(editorSession, "group", eventGroup.id)) {
+        editingEnabled = true;
       }
     }
 
